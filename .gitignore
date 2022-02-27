@@ -1,0 +1,7 @@
+pkg/
+mod/
+go.mod
+go.sum
+github.com/
+golang.org/
+*.exe
