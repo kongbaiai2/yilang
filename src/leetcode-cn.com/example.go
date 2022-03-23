@@ -97,3 +97,38 @@ func (l leetcode) lengthOfLongestSubstring(s string) int {
 	}
 	return max
 }
+
+// 先合并有序数组，后判断中位数是1个还是2个。速度慢，内存占用高，要改进。
+func (l leetcode) findMedianSortedArrays(nums1 []int, nums2 []int) float64 {
+	var fl64 float64
+	sortList := []int{}
+	m := len(nums1)
+	n := len(nums2)
+	var i, j int
+	for i < m && j < n {
+		if nums1[i] > nums2[j] {
+			sortList = append(sortList, nums2[j])
+			j++
+		} else {
+			sortList = append(sortList, nums1[i])
+			i++
+		}
+	}
+
+	if i < m {
+		sortList = append(sortList, nums1[i:m]...)
+	}
+	if j < n {
+		sortList = append(sortList, nums2[j:n]...)
+	}
+
+	q := len(sortList)
+	// fmt.Println(sortList, q%2)
+	if q%2 != 0 {
+		fl64 = float64(sortList[q/2])
+	} else {
+		fl64 = (float64((sortList[q/2]) + sortList[q/2-1])) / 2
+	}
+
+	return fl64
+}
