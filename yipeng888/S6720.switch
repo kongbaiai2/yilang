@@ -1,0 +1,292 @@
+[ZhuHaiYD-S6730-YP]dis curr
+!Software Version V200R020C10SPC500
+#
+sysname ZhuHaiYD-S6730-YP
+#
+ipv6
+#
+authentication-profile name default_authen_profile
+authentication-profile name dot1x_authen_profile
+authentication-profile name dot1xmac_authen_profile
+authentication-profile name mac_authen_profile
+authentication-profile name multi_authen_profile
+authentication-profile name portal_authen_profile
+#
+telnet server enable
+telnet server-source all-interface
+#
+http server-source -i MEth0/0/1
+#
+clock timezone beijing add 08:00:00
+#
+diffserv domain default
+#
+radius-server template default
+#
+pki realm default                         
+ certificate-check none
+#
+acl number 2100
+ rule 5 permit source 120.232.56.123 0
+ rule 10 permit source 120.232.0.0 0.0.255.255
+#
+free-rule-template name default_free_rule
+#
+portal-access-profile name portal_access_profile
+#
+drop-profile default
+#
+aaa
+ authentication-scheme default
+  authentication-mode local
+ authentication-scheme radius
+  authentication-mode radius
+ authorization-scheme default
+  authorization-mode local
+ accounting-scheme default
+  accounting-mode none
+ local-aaa-user password policy administrator
+  password history record number 0
+  password expire 0                       
+ domain default
+  authentication-scheme radius
+  accounting-scheme default
+  radius-server default
+ domain default_admin
+  authentication-scheme default
+  accounting-scheme default
+ undo local-user admin
+ local-user wuliang password irreversible-cipher $1c$j`2#Yj<0u:$5r~9AH'se4PsVY=MGlo;sOhC)II(A@0oJ;4X|fu=$
+ local-user wuliang privilege level 15
+ local-user wuliang service-type telnet terminal ssh
+#
+interface Vlanif1
+#
+interface MEth0/0/1
+ ip address 192.168.1.253 255.255.255.0
+#
+interface XGigabitEthernet0/0/1
+ undo portswitch
+ ipv6 enable
+ ip address 192.168.16.1 255.255.255.252
+ ipv6 address FEC0::16:1/127
+#
+interface XGigabitEthernet0/0/2           
+ undo portswitch
+ ipv6 enable
+ ip address 192.168.16.5 255.255.255.252
+ ipv6 address FEC0::16:3/127
+#
+interface XGigabitEthernet0/0/3
+ undo portswitch
+ ipv6 enable
+ ip address 192.168.16.9 255.255.255.252
+ ipv6 address FEC0::16:5/127
+#
+interface XGigabitEthernet0/0/4
+ undo portswitch
+ ipv6 enable
+ ip address 192.168.16.13 255.255.255.252
+ ipv6 address FEC0::16:7/127
+#
+interface XGigabitEthernet0/0/5
+ undo portswitch
+ ipv6 enable
+ ip address 192.168.16.17 255.255.255.252
+ ipv6 address FEC0::16:9/127
+#
+interface XGigabitEthernet0/0/6           
+ undo portswitch
+ ipv6 enable
+ ip address 192.168.16.21 255.255.255.252
+ ipv6 address FEC0::16:11/127
+#
+interface XGigabitEthernet0/0/7
+ undo portswitch
+ ipv6 enable
+ ip address 192.168.16.25 255.255.255.252
+ ipv6 address FEC0::16:13/127
+#
+interface XGigabitEthernet0/0/8
+ undo portswitch
+ ipv6 enable
+ ip address 192.168.16.29 255.255.255.252
+ ipv6 address FEC0::16:15/127
+#
+interface XGigabitEthernet0/0/9
+ undo portswitch
+ ipv6 enable
+ ip address 192.168.16.33 255.255.255.252
+ ipv6 address FEC0::16:17/127
+#
+interface XGigabitEthernet0/0/10          
+ undo portswitch
+ ipv6 enable
+ ip address 192.168.16.37 255.255.255.252
+ ipv6 address FEC0::16:19/127
+#
+interface XGigabitEthernet0/0/11
+#
+interface XGigabitEthernet0/0/12
+#
+interface XGigabitEthernet0/0/13
+#
+interface XGigabitEthernet0/0/14
+#
+interface XGigabitEthernet0/0/15
+#
+interface XGigabitEthernet0/0/16
+#
+interface XGigabitEthernet0/0/17
+#
+interface XGigabitEthernet0/0/18
+#
+interface XGigabitEthernet0/0/19
+#
+interface XGigabitEthernet0/0/20          
+#
+interface XGigabitEthernet0/0/21
+#
+interface XGigabitEthernet0/0/22
+#
+interface XGigabitEthernet0/0/23
+#
+interface XGigabitEthernet0/0/24
+ undo portswitch
+ description test-yd
+ ip address 120.232.56.1 255.255.255.128
+#
+interface 100GE0/0/1
+ undo portswitch
+ description internet
+ bandwidth 100000
+ ipv6 enable
+ ip address 192.168.15.50 255.255.255.252
+ ipv6 address FEC0::10:0/127
+#
+interface 100GE0/0/2
+#
+interface 100GE0/0/3
+#                                         
+interface 100GE0/0/4
+#
+interface 100GE0/0/5
+#
+interface 100GE0/0/6
+#
+interface NULL0
+#
+interface LoopBack0
+ description manager
+ ipv6 enable
+ ip address 183.232.144.129 255.255.255.255
+ ipv6 address 2409:8C54:3010:5::123/128
+#
+interface LoopBack100
+ description manager-test
+ ip address 120.232.57.128 255.255.255.255
+#
+undo icmp name timestamp-request receive
+#
+ip route-static 0.0.0.0 0.0.0.0 192.168.15.49 description internet
+ip route-static 120.232.57.128 255.255.255.128 192.168.16.2 description KeHu
+ip route-static 120.232.57.128 255.255.255.128 192.168.16.6 description KeHu
+ip route-static 120.232.57.128 255.255.255.128 192.168.16.10 description KeHu
+ip route-static 120.232.57.128 255.255.255.128 192.168.16.14 description KeHu
+ip route-static 120.232.57.128 255.255.255.128 192.168.16.18 description KeHu
+ip route-static 120.232.57.128 255.255.255.128 192.168.16.22 description KeHu
+ip route-static 120.232.57.128 255.255.255.128 192.168.16.26 description KeHu
+ip route-static 120.232.57.128 255.255.255.128 192.168.16.30 description KeHu
+ip route-static 120.232.57.128 255.255.255.128 192.168.16.34 description KeHu
+ip route-static 120.232.57.128 255.255.255.128 192.168.16.38 description KeHu
+#
+ipv6 route-static :: 0 FEC0::10:1 description internet
+ipv6 route-static 2409:8C54:3010:5:: 64 FEC0::16:0 description KeHu-tmp
+ipv6 route-static 2409:8C54:3010:5:: 64 FEC0::16:2 description KeHu-tmp
+ipv6 route-static 2409:8C54:3010:5:: 64 FEC0::16:4 description KeHu-tmp
+ipv6 route-static 2409:8C54:3010:5:: 64 FEC0::16:6 description KeHu-tmp
+ipv6 route-static 2409:8C54:3010:5:: 64 FEC0::16:8 description KeHu-tmp
+ipv6 route-static 2409:8C54:3010:5:: 64 FEC0::16:10 description KeHu-tmp
+ipv6 route-static 2409:8C54:3010:5:: 64 FEC0::16:12 description KeHu-tmp
+ipv6 route-static 2409:8C54:3010:5:: 64 FEC0::16:14 description KeHu-tmp
+ipv6 route-static 2409:8C54:3010:5:: 64 FEC0::16:16 description KeHu-tmp
+ipv6 route-static 2409:8C54:3010:5:: 64 FEC0::16:18 description KeHu-tmp
+ipv6 route-static 2409:8C54:3010:7:: 64 FEC0::16:0 description KeHu
+ipv6 route-static 2409:8C54:3010:7:: 64 FEC0::16:2 description KeHu
+ipv6 route-static 2409:8C54:3010:7:: 64 FEC0::16:4 description KeHu
+ipv6 route-static 2409:8C54:3010:7:: 64 FEC0::16:6 description KeHu
+ipv6 route-static 2409:8C54:3010:7:: 64 FEC0::16:8 description KeHu
+ipv6 route-static 2409:8C54:3010:7:: 64 FEC0::16:10 description KeHu
+ipv6 route-static 2409:8C54:3010:7:: 64 FEC0::16:12 description KeHu
+ipv6 route-static 2409:8C54:3010:7:: 64 FEC0::16:14 description KeHu
+ipv6 route-static 2409:8C54:3010:7:: 64 FEC0::16:16 description KeHu
+ipv6 route-static 2409:8C54:3010:7:: 64 FEC0::16:18 description KeHu
+#
+snmp-agent
+snmp-agent local-engineid 800007DB031C3D2FF3C670
+snmp-agent sys-info contact kongbaiai2@126.com; Beijing Yipeng Technologies Co., Ltd.
+snmp-agent sys-info version v3
+snmp-agent group v3 group-admin1 privacy read-view zabbix notify-view zabbix acl 2100
+snmp-agent mib-view included zabbix iso
+snmp-agent usm-user v3 zabbix@1231
+snmp-agent usm-user v3 zabbix@1231 group group-admin1
+snmp-agent usm-user v3 zabbix@1231 authentication-mode sha cipher %^%#&F9_7mvcGCvqRC,n0J5RUG.'+}Y}F~Ejo7;~kpnP%^%#
+snmp-agent usm-user v3 zabbix@1231 privacy-mode aes128 cipher %^%#l1=-+PL$g49lpJRT2t=G^rI~H+"6_YGZ%j*(._59%^%#
+snmp-agent usm-user v3 zabbix@1231 acl 2100
+undo snmp-agent protocol source-status all-interface
+snmp-agent protocol source-interface LoopBack0
+undo snmp-agent protocol source-status ipv6 all-interface
+#
+stelnet server enable
+ssh user wuliang
+ssh user wuliang authentication-type password
+ssh user wuliang service-type all
+ssh server-source all-interface
+ssh server cipher aes256_ctr aes128_ctr
+ssh server hmac sha2_256
+ssh server key-exchange dh_group16_sha512 dh_group15_sha512 dh_group14_sha256 dh_group_exchange_sha256
+ssh client cipher aes256_ctr aes128_ctr
+ssh client hmac sha2_256
+ssh client key-exchange dh_group16_sha512 dh_group15_sha512 dh_group14_sha256 dh_group_exchange_sha256
+ssh server dh-exchange min-len 2048
+ssh authorization-type default aaa
+#
+user-interface con 0
+ authentication-mode none
+user-interface vty 0 4
+ authentication-mode aaa
+ protocol inbound all
+user-interface vty 16 20
+#
+wlan
+ traffic-profile name default
+ security-profile name default
+ security-profile name default-wds
+ security-profile name default-mesh
+ ssid-profile name default                
+ vap-profile name default
+ wds-profile name default
+ mesh-handover-profile name default
+ mesh-profile name default
+ regulatory-domain-profile name default
+ air-scan-profile name default
+ rrm-profile name default
+ radio-2g-profile name default
+ radio-5g-profile name default
+ wids-spoof-profile name default
+ wids-whitelist-profile name default
+ wids-profile name default
+ ap-system-profile name default
+ port-link-profile name default
+ wired-port-profile name default
+ ap-group name default
+ provision-ap
+#
+dot1x-access-profile name dot1x_access_profile
+#
+mac-access-profile name mac_access_profile
+#
+ops
+#                                         
+return
+[ZhuHaiYD-S6730-YP]  
