@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"strings"
 )
 
@@ -98,37 +99,89 @@ func (l leetcode) lengthOfLongestSubstring(s string) int {
 	return max
 }
 
+// 2个数组，各自是升序排列的。
 // 先合并有序数组，后判断中位数是1个还是2个。速度慢，内存占用高，要改进。
+// 改进有2点，1排序算法，2排到中间位置停止。
+// func (l leetcode) findMedianSortedArrays(nums1 []int, nums2 []int) float64 {
+// 	var fl64 float64
+// 	sortList := []int{}
+// 	m := len(nums1)
+// 	n := len(nums2)
+// 	var i, j int
+// 	for i < m && j < n {
+// 		if nums1[i] > nums2[j] {
+// 			sortList = append(sortList, nums2[j])
+// 			j++
+// 		} else {
+// 			sortList = append(sortList, nums1[i])
+// 			i++
+// 		}
+// 	}
+
+// 	if i < m {
+// 		sortList = append(sortList, nums1[i:m]...)
+// 	}
+// 	if j < n {
+// 		sortList = append(sortList, nums2[j:n]...)
+// 	}
+
+// 	q := len(sortList)
+// 	// fmt.Println(sortList, q%2)
+// 	if q%2 != 0 {
+// 		fl64 = float64(sortList[q/2])
+// 	} else {
+// 		fl64 = (float64((sortList[q/2]) + sortList[q/2-1])) / 2
+// 	}
+
+// 	return fl64
+// }
+
+// 算法：二分查找法。2个数组取中位数，在分别用这个数取 数组1和2的中位数，
+//（这个数可能跨界，需要此数和数组长度对比，取小值）对比2个数组中位数大小，
+// 数小的数组，取k和下标，数小的那组，左边所有值都在中位数左边，中位数继续 往右边查找
 func (l leetcode) findMedianSortedArrays(nums1 []int, nums2 []int) float64 {
-	var fl64 float64
-	sortList := []int{}
-	m := len(nums1)
-	n := len(nums2)
-	var i, j int
-	for i < m && j < n {
-		if nums1[i] > nums2[j] {
-			sortList = append(sortList, nums2[j])
-			j++
+	totalLength := len(nums1) + len(nums2)
+	if totalLength%2 == 1 {
+		midIndex := totalLength / 2
+		return float64(getKthElement(nums1, nums2, midIndex+1))
+	} else {
+		midIndex1, midIndex2 := totalLength/2-1, totalLength/2
+		return float64(getKthElement(nums1, nums2, midIndex1+1)+getKthElement(nums1, nums2, midIndex2+1)) / 2.0
+	}
+	// return 0
+
+}
+
+func getKthElement(nums1, nums2 []int, k int) int {
+	index1, index2 := 0, 0
+	for {
+		if index1 == len(nums1) {
+			return nums2[index2+k-1]
+		}
+		if index2 == len(nums2) {
+			return nums1[index1+k-1]
+		}
+		if k == 1 {
+			return min(nums1[index1], nums2[index2])
+		}
+		half := k / 2
+		newIndex1 := min(index1+half, len(nums1)) - 1
+		newIndex2 := min(index2+half, len(nums2)) - 1
+		pivot1, pivot2 := nums1[newIndex1], nums2[newIndex2]
+		if pivot1 <= pivot2 {
+			k -= (newIndex1 - index1 + 1)
+			index1 = newIndex1 + 1
 		} else {
-			sortList = append(sortList, nums1[i])
-			i++
+			k -= (newIndex2 - index2 + 1)
+			fmt.Println(k)
+			index2 = newIndex2 + 1
 		}
 	}
 
-	if i < m {
-		sortList = append(sortList, nums1[i:m]...)
+}
+func min(x, y int) int {
+	if x < y {
+		return x
 	}
-	if j < n {
-		sortList = append(sortList, nums2[j:n]...)
-	}
-
-	q := len(sortList)
-	// fmt.Println(sortList, q%2)
-	if q%2 != 0 {
-		fl64 = float64(sortList[q/2])
-	} else {
-		fl64 = (float64((sortList[q/2]) + sortList[q/2-1])) / 2
-	}
-
-	return fl64
+	return y
 }

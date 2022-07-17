@@ -44,7 +44,9 @@ func (lt leetcodeTest) leetcodeTest3() {
 	fmt.Println(lt.lengthOfLongestSubstring(s))
 }
 func (lt leetcodeTest) leetcodeTest4() {
-	nums1 := []int{1, 3, 9}
-	nums2 := []int{2, 6, 8}
+	nums1 := []int{1, 3, 9, 14, 17, 19, 21}
+	nums2 := []int{2, 6, 8, 9, 10, 12}
 	fmt.Println(lt.findMedianSortedArrays(nums1, nums2))
 }
+
+// 1, 2, 3, 6, 8, 9, 9 ,11, 14, 17, 19 21 22 25
