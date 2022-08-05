@@ -1,4 +1,4 @@
-TARGETS := go_tools
+TARGETS := go_domain
 SOURCES := $(wildcard *.go)
 
 BUILD_TIME=`date +%FT%T`

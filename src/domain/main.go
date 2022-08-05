@@ -31,8 +31,8 @@ var (
 
 	retMap map[string]map[string]string
 
-	g_buildTimestamp   string
-	g_buildGitRevision string
+	buildTimestamp   string
+	buildGitRevision string
 )
 
 type AppCfg struct {
@@ -43,6 +43,7 @@ type AppCfg struct {
 	Domain_file    string   `json:"domain_file_excel"`
 	TaskCronConfig string   `json:"task_cron_config"`
 	Hostname       string   `json:"hostname"`
+	ListenPort     string   `json:"listen_port"`
 }
 
 func AnalyzeExcel(path, regexpStr string) (map[string]string, error) {
@@ -230,7 +231,8 @@ func listenPort() {
 		c.JSON(http.StatusOK, retMap)
 	})
 
-	router.Run(":3333")
+	port := ":" + cfg.ListenPort
+	router.Run(port)
 }
 func readConfig(configFile string) error {
 	c := newConfig(configFile)
@@ -247,7 +249,7 @@ func initConfig() {
 	flag.Parse()
 
 	if *pAppVersion {
-		fmt.Printf("Git Revision: %s\nBuild Time: %s\n", g_buildGitRevision, g_buildTimestamp)
+		fmt.Printf("Git Revision: %s\nBuild Time: %s\n", buildGitRevision, buildTimestamp)
 		os.Exit(0)
 	}
 
