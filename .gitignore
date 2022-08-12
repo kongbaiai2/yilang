@@ -4,4 +4,13 @@ go.mod
 go.sum
 github.com/
 golang.org/
+*.bak
 *.exe
+*.png
+*.csv
+*.log
+gotools
+!gotools/
+vendor/
+.DS_Store
+src/.DS_Store

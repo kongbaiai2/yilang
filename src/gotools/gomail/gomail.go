@@ -1,4 +1,4 @@
-package main
+package gomail
 
 import (
 	"crypto/tls"
@@ -24,7 +24,7 @@ type M_cli struct {
 	Password    string
 }
 
-func timeout() error {
+func TimeOut() error {
 	time2 := int64(1658854666)
 	time1 := time.Now().Unix()
 	// time.Sleep(1 * time.Second)
@@ -89,7 +89,7 @@ func GoMail(c *cli.Context, sliceFlag *cli.StringSlice) error {
 		Password:    c.String("password"),
 	}
 
-	log.Printf("to,%v", to)
+	log.Printf("send to:%v", to)
 	if m_cli.Password == "" && c.String("key") == "yilang" {
 		m_cli.Password = "OMZNGORYYAXGLTUP"
 	}
@@ -117,7 +117,7 @@ func AddSendMail(goCom []*cli.Command) []*cli.Command {
 			&cli.StringSliceFlag{
 				Name:    "to",
 				Aliases: []string{"t"},
-				Usage:   "recipient mail name case: 123@126.com",
+				Usage:   "requisite recipient mail name case: 123@126.com",
 				Value:   sliceFlag,
 			},
 			&cli.StringFlag{
@@ -168,7 +168,7 @@ func AddSendMail(goCom []*cli.Command) []*cli.Command {
 			},
 		},
 		Action: func(c *cli.Context) error {
-			err := timeout()
+			err := TimeOut()
 			if err != nil {
 				return err
 			}

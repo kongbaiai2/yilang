@@ -1,1 +1,14 @@
 "yilang" 
+
+replace (
+	gomail => ./gotools/gomail
+	rrdtool => ./gotools/rrdtool
+)
+
+#go rrdtool for mac
+go get github.com/ziutek/rrd
+/bin/zsh -c "$(curl -fsSL https://gitee.com/cunkai/HomebrewCN/raw/master/Homebrew.sh)"
+source /Users/kongbaiai2/.bash_profile
+brew install pkg-config
+brew install rrdtool rrdtool-devel
+

@@ -1,5 +1,5 @@
 
-TARGETS := gomail
+TARGETS := gotools
 SOURCES := $(wildcard *.go)
 
 RELEASE := 1
@@ -11,6 +11,7 @@ BUILD_TIME=`date +%FT%T`
 LDFLAGS=-ldflags "-X main.buildTimestamp=${BUILD_TIME} " #-X main.buildGitRevison=${GIT_REVISIONS}"
 
 GO_PATH := $(dir $(abspath $(dir $$PWD)))vendor/
+# GO_PATH := "/Users/kongbaiai2/go/pkg"
 GO111MODULE=auto
 
 all: $(TARGETS)
