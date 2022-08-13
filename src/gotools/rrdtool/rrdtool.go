@@ -220,6 +220,9 @@ func DataGrapher(g *rrd.Grapher, dsname, ratio_f string, color string) {
 	vdef_last := fmt.Sprintf("%s,LAST", def_name)
 	vdef_ave := fmt.Sprintf("%s,AVERAGE", def_name)
 	vdef_max := fmt.Sprintf("%s,MAXIMUM", def_name)
+	vdef_name_last := dsname + "last"
+	vdef_name_ave := dsname + "ave"
+	vdef_name_max := dsname + "max"
 
 	// cdef_ratio := fmt.Sprintf("%s,%s,*", def_name, ratio_f)
 	// cdef_name := fmt.Sprintf("%s_%s", dsname, ratio_f)
@@ -229,15 +232,15 @@ func DataGrapher(g *rrd.Grapher, dsname, ratio_f string, color string) {
 
 	g.Def(def_name+"95", dbfile, dsname, "LAST")
 	g.Def(def_name, dbfile, dsname, "AVERAGE")
-	g.VDef(vdef_last, vdef_last)
-	g.VDef(vdef_ave, vdef_ave)
-	g.VDef(vdef_max, vdef_max)
+	g.VDef(vdef_name_last, vdef_last)
+	g.VDef(vdef_name_ave, vdef_ave)
+	g.VDef(vdef_name_max, vdef_max)
 	// g.CDef()
 
 	g.Line(1, def_name, color, dsname)
-	g.GPrint(vdef_last, "Current\\: %4.2lf%s")
-	g.GPrint(vdef_ave, "Average\\: %4.2lf%s")
-	g.GPrint(vdef_max, "Maximum\\: %4.2lf%S")
+	g.GPrint(vdef_name_last, "Current\\: %4.2lf%s")
+	g.GPrint(vdef_name_ave, "Average\\: %4.2lf%s")
+	g.GPrint(vdef_name_max, "Maximum\\: %4.2lf%S")
 
 	g.Comment("\\n")
 
