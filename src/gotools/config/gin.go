@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"rrdtool"
+	"strings"
 	"time"
 
 	"github.com/didip/tollbooth"
