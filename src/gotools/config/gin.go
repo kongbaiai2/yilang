@@ -82,7 +82,7 @@ func upload(c *gin.Context) {
 		}
 
 		// 生成图片并返回
-		if strings.Contains(dst, ".rrd") {
+		if strings.Contains(dst, ".csv") {
 			createRrd(dst)
 		}
 
