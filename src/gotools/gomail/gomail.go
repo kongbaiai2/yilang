@@ -2,9 +2,7 @@ package gomail
 
 import (
 	"crypto/tls"
-	"fmt"
 	"log"
-	"time"
 
 	"github.com/urfave/cli/v2"
 	"gopkg.in/gomail.v2"
@@ -24,18 +22,6 @@ type M_cli struct {
 	Password    string
 }
 
-func TimeOut() error {
-	time2 := int64(1658854666)
-	time1 := time.Now().Unix()
-	// time.Sleep(1 * time.Second)
-	// log.Printf("%#v, %v", time1, time2)
-
-	if time1-time2 >= 31104000 {
-		log.Printf("gt 5: %v", time1-time2)
-		return fmt.Errorf("time out")
-	}
-	return nil
-}
 func (c *M_cli) SendMail() error {
 	m := gomail.NewMessage()
 	// m.SetHeader("From", "kongbaiai2@126.com")
@@ -168,10 +154,6 @@ func AddSendMail(goCom []*cli.Command) []*cli.Command {
 			},
 		},
 		Action: func(c *cli.Context) error {
-			err := TimeOut()
-			if err != nil {
-				return err
-			}
 
 			GoMail(c, sliceFlag)
 			return nil
