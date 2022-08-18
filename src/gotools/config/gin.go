@@ -1,13 +1,16 @@
 package config
 
 import (
+	"bufio"
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"rrdtool"
+	"strconv"
 	"strings"
 	"time"
 
@@ -20,15 +23,15 @@ import (
 	"github.com/ziutek/rrd"
 )
 
-func createRrd(filename string) string {
+func createRrd(srcrrd, filename, savefile, dstrrd string) string {
 	csvhandler := &rrdtool.Csvhandler{
 		Headler:   []rrdtool.CsvHeadle{},
 		TimeValue: make(map[int]rrdtool.CsvTimeValue),
 	}
-	csvhandler.Dbfile = "test.rrd"  // dbfile
-	csvhandler.Pngfile = "test.png" // pngfile
-	csvhandler.SouCsv = filename    // soucsv
-	csvhandler.DstCsv = "dst.rrd"   // dstcsv
+	csvhandler.Dbfile = srcrrd    // dbfile
+	csvhandler.Pngfile = savefile // pngfile
+	csvhandler.SouCsv = filename  // soucsv
+	csvhandler.DstCsv = dstrrd    // dstcsv
 
 	// data source file cvs
 	err := csvhandler.GetFileCsv(csvhandler.SouCsv)
@@ -62,33 +65,103 @@ func createRrd(filename string) string {
 	log.Printf("time:%v,end:%v,count:%v", csvhandler.StartTime, csvhandler.EndTime, len(csvhandler.TimeValue))
 	return csvhandler.Pngfile
 }
+
+func createZip(savezip string, fileZip []string) ([]string, error) {
+	err := rrdtool.Zip(savezip, fileZip)
+	if err != nil {
+		return fileZip, err
+	}
+	return fileZip, nil
+}
+
+// 配置upload，返回下载二进制流
+func downOctetStream(c *gin.Context, downfile string) error {
+
+	f, err := os.OpenFile(downfile, os.O_RDONLY, os.ModePerm)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	buf := bufio.NewReader(f)
+	type_b, err := buf.Peek(512)
+	if err != nil {
+		return err
+	}
+
+	c.Writer.Header().Set("Content-type", http.DetectContentType(type_b)) //设置文件格式
+
+	fileinfo, err := f.Stat()
+	if err != nil {
+		return err
+	}
+
+	//"application/octet-stream"
+	c.Writer.Header().Set("Content-Length", strconv.FormatInt(fileinfo.Size(), 10))
+
+	if ok, _ := strconv.ParseBool("true"); ok {
+		c.Writer.Header().Add("Content-Disposition", "attachment; filename="+downfile) //下载文件名,不设置网页直接打开PDF.jpg.png 等格式
+	}
+
+	buf_b := make([]byte, 1024*1024) //发送大小
+	for {
+		n, err := buf.Read(buf_b)
+		if err == io.EOF || n == 0 {
+			break
+		}
+
+		c.Writer.Write(buf_b[:n])
+	}
+	return nil
+}
+
 func upload(c *gin.Context) {
+
+	dir := "./config/website/tmp"
+	fileList := []string{}
 
 	form, err := c.MultipartForm()
 	if err != nil {
 		c.String(http.StatusBadRequest, fmt.Sprintf("get err %s", err.Error()))
 	}
-	// 获取所有图片
+	// 获取所有文件
 	files := form.File["files"]
-	png_file := "test.png"
-	// 遍历所有图片
+
+	// 遍历所有文件
 	for _, file := range files {
 		// 逐个存
 		// if err := c.SaveUploadedFile(file, file.Filename); err != nil {
-		dst := fmt.Sprintf("./config/website/tmp/%s", file.Filename)
-		if err := c.SaveUploadedFile(file, dst); err != nil {
+		src := fmt.Sprintf("%s/%s", dir, file.Filename)
+
+		if err := c.SaveUploadedFile(file, src); err != nil {
 			c.String(http.StatusBadRequest, fmt.Sprintf("upload err %s", err.Error()))
 			return
 		}
 
 		// 生成图片并返回
-		if strings.Contains(dst, ".csv") {
-			createRrd(dst)
+
+		if strings.Contains(src, ".csv") {
+			createRrd(src+".rrd", src, src+".png", src+"_dst.rrd")
 		}
 
+		// save filename
+		fileList = append(fileList, src+".rrd", src, src+".png", src+"_dst.rrd")
 	}
-	log.Println(png_file)
-	c.File("./config/website/tmp/test.png")
+	log.Println(fileList)
+
+	// 多文件压缩zip
+	dstZip := time.Now().Format("20060102T150405")
+	_, err = createZip(dstZip+".zip", fileList)
+	if err != nil {
+		c.String(http.StatusBadRequest, fmt.Sprintf("createZip err %s", err.Error()))
+	}
+
+	//返回流
+	err = downOctetStream(c, dstZip+".zip")
+	if err != nil {
+		c.String(http.StatusBadRequest, fmt.Sprintf("downOctetStream err %s", err.Error()))
+	}
+	// c.File(png_file)
+
 	// c.String(200, fmt.Sprintf("upload ok %d files", len(files)))
 
 }

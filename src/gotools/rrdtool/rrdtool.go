@@ -174,9 +174,9 @@ func (c *Csvhandler) CreateRRD(dbfile string, starttime time.Time, len int, step
 	c.Rrd.Create = rrd.NewCreator(dbfile, starttime, step)
 
 	cc := c.Rrd.Create
-	cc.RRA("LAST", 0.5, 1, 8000)
-	cc.RRA("AVERAGE", 0.5, 5, 8000)
-	cc.RRA("MAX", 0.5, 5, 8000)
+	cc.RRA("LAST", 0.5, 1, 12000)
+	cc.RRA("AVERAGE", 0.5, 1, 12000)
+	cc.RRA("MAX", 0.5, 5, 12000)
 
 	// GAUGE DERIVE COUNTER ABSOLUTE COMPUTE
 	for i := 0; i < len; i++ {
