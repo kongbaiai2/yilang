@@ -239,7 +239,7 @@ func DataGrapher(g *rrd.Grapher, dsname string, color string, sUnix, eUnix int64
 	// g.Line(1, cdef_name, "ff0000", "95th\\: ")
 	if ratio_f > 0 && ratio_f != 1 {
 		cdef_ratio := fmt.Sprintf("%s,%f,*", def_name, ratio_f)
-		cdef_name := fmt.Sprintf("%s_%f", dsname, ratio_f)
+		cdef_name := fmt.Sprintf("%s_ratiof", dsname)
 
 		g.Def(def_name, dbfile, dsname, "AVERAGE", "start="+strconv.FormatInt(sUnix, 10), "end="+strconv.FormatInt(eUnix, 10))
 
@@ -461,7 +461,7 @@ func (c *Csvhandler) FetchRRDXport(dbfile string, start, end time.Time, ratio fl
 	for i := 0; i < len(c.ArrayDsName); i++ {
 		def_name := c.ArrayDsName[i]
 		cdef_ratio := fmt.Sprintf("%s,%f,*", def_name, ratio)
-		cdef_name := fmt.Sprintf("%s_%f", def_name, ratio)
+		cdef_name := fmt.Sprintf("%s_ratio", def_name)
 
 		e.Def(def_name, dbfile, c.ArrayDsName[i], "AVERAGE") // "start="+strconv.FormatInt(sUnix, 10), "end="+strconv.FormatInt(eUnix, 10))
 		e.CDef(cdef_name, cdef_ratio)                        // 设置等比大小
@@ -484,15 +484,15 @@ func (c *Csvhandler) FetchRRDXport(dbfile string, start, end time.Time, ratio fl
 
 	row := 0
 	for ti := xportRes.Start.Add(xportRes.Step); ti.Before(end) || ti.Equal(end); ti = ti.Add(xportRes.Step) {
-		fmt.Printf("%s / %d", ti, ti.Unix())
+		// fmt.Printf("%s / %d", ti, ti.Unix())
 		resStruct.ResTimeList = append(resStruct.ResTimeList, ti)
 		rowsList := []float64{}
 		for i := 0; i < len(xportRes.Legends); i++ {
 			v := xportRes.ValueAt(i, row)
-			fmt.Printf("\t%e", v)
+			// fmt.Printf("\t%e", v)
 			rowsList = append(rowsList, v)
 		}
-		fmt.Printf("\n")
+		// fmt.Printf("\n")
 		row++
 		resStruct.ResValueList = append(resStruct.ResValueList, rowsList)
 	}
