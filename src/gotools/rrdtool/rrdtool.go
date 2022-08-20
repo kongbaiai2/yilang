@@ -34,8 +34,6 @@ var (
 	color3 = "ffD801"
 	color4 = "00ffff"
 	color5 = "e238ec"
-
-	ratio = "0.7"
 )
 
 type Csvhandler struct {
@@ -54,6 +52,7 @@ type Csvhandler struct {
 	EndTime     time.Time
 	EndStr      string
 	EndUnix     int64
+	Ratio       float64
 	// Other       []string `json:"other"`
 }
 type CsvHeadle struct {
@@ -225,7 +224,7 @@ func (c *Csvhandler) UpdateRRD(dbfile string) error {
 	return nil
 }
 
-func DataGrapher(g *rrd.Grapher, dsname, ratio_f string, color string, sUnix, eUnix int64, value95 float64) {
+func DataGrapher(g *rrd.Grapher, dsname string, color string, sUnix, eUnix int64, value95 float64, ratio_f float64) {
 	def_name := dsname
 	vdef_last := fmt.Sprintf("%s,LAST", def_name)
 	vdef_ave := fmt.Sprintf("%s,AVERAGE", def_name)
@@ -238,25 +237,49 @@ func DataGrapher(g *rrd.Grapher, dsname, ratio_f string, color string, sUnix, eU
 	// cdef_name := fmt.Sprintf("%s_%s", dsname, ratio_f)
 	// g.CDef(cdef_name, cdef_ratio) // 设置等比大小
 	// g.Line(1, cdef_name, "ff0000", "95th\\: ")
+	if ratio_f > 0 && ratio_f != 1 {
+		cdef_ratio := fmt.Sprintf("%s,%f,*", def_name, ratio_f)
+		cdef_name := fmt.Sprintf("%s_%f", dsname, ratio_f)
 
-	g.Def(def_name, dbfile, dsname, "AVERAGE", "start="+strconv.FormatInt(sUnix, 10), "end="+strconv.FormatInt(eUnix, 10))
-	g.VDef(vdef_name_last, vdef_last)
-	g.VDef(vdef_name_ave, vdef_ave)
-	g.VDef(vdef_name_max, vdef_max)
-	// g.CDef()
+		g.Def(def_name, dbfile, dsname, "AVERAGE", "start="+strconv.FormatInt(sUnix, 10), "end="+strconv.FormatInt(eUnix, 10))
 
-	g.Line(1, def_name, color, dsname)
-	g.GPrint(vdef_name_last, "Current\\: %4.2lf%s")
-	g.GPrint(vdef_name_ave, "Average\\: %4.2lf%s")
-	g.GPrint(vdef_name_max, "Maximum\\: %4.2lf%s")
-	g.Comment("\\n")
+		g.CDef(cdef_name, cdef_ratio) // 设置等比大小
+		g.VDef(vdef_name_last, fmt.Sprintf("%s,LAST", cdef_name))
+		g.VDef(vdef_name_ave, fmt.Sprintf("%s,AVERAGE", cdef_name))
+		g.VDef(vdef_name_max, fmt.Sprintf("%s,MAXIMUM", cdef_name))
 
-	strValue95 := fmt.Sprintf("%v", value95)
-	g.HRule(strValue95, color, "95th\\: ")
-	print95 := fmt.Sprintf("%.4f", value95)
-	g.Comment(print95)
-	g.Comment("\\n")
+		g.Line(1, cdef_name, color, dsname)
 
+		g.GPrint(vdef_name_last, "Current\\: %4.2lf%s")
+		g.GPrint(vdef_name_ave, "Average\\: %4.2lf%s")
+		g.GPrint(vdef_name_max, "Maximum\\: %4.2lf%s")
+		g.Comment("\\n")
+
+		strValue95 := fmt.Sprintf("%v", value95)
+		g.HRule(strValue95, color, "95th\\: ")
+		print95 := fmt.Sprintf("%.4f", value95)
+		g.Comment(print95)
+		g.Comment("\\n")
+	} else if ratio_f == 1 {
+
+		g.Def(def_name, dbfile, dsname, "AVERAGE", "start="+strconv.FormatInt(sUnix, 10), "end="+strconv.FormatInt(eUnix, 10))
+		g.VDef(vdef_name_last, vdef_last)
+		g.VDef(vdef_name_ave, vdef_ave)
+		g.VDef(vdef_name_max, vdef_max)
+		// g.CDef()
+
+		g.Line(1, def_name, color, dsname)
+		g.GPrint(vdef_name_last, "Current\\: %4.2lf%s")
+		g.GPrint(vdef_name_ave, "Average\\: %4.2lf%s")
+		g.GPrint(vdef_name_max, "Maximum\\: %4.2lf%s")
+		g.Comment("\\n")
+
+		strValue95 := fmt.Sprintf("%v", value95)
+		g.HRule(strValue95, color, "95th\\: ")
+		print95 := fmt.Sprintf("%.4f", value95)
+		g.Comment(print95)
+		g.Comment("\\n")
+	}
 	// cdef_vname := fmt.Sprintf("%s,95,PERCENT", dsname) // 这里95值取值 PERCENTNAN PERCENT,不好用，自定义排序后算95值。
 	// VDEF:perc95=mydata,95,PERCENT
 	// cdef_vname := fmt.Sprintf("%s,95,PERCENT", def_name+"95") // 这里95值取值
@@ -268,7 +291,11 @@ func DataGrapher(g *rrd.Grapher, dsname, ratio_f string, color string, sUnix, eU
 
 	// g.GPrint(line95th, "%.6lf")
 }
-func (c *Csvhandler) CreateGrapher(dbfile, file_png string, start, end time.Time, line95 *FetchRrd) error {
+func (c *Csvhandler) CreateGrapher(dbfile, file_png string, start, end time.Time, line95 *FetchRrd, ratio float64) error {
+	if ratio <= 0 {
+		// log.Panic("errors: ratio <=0 ")
+		return fmt.Errorf("errors: ratio <=0 ")
+	}
 	// Graph Headler
 	// g := rrd.NewGrapher()
 	c.Rrd.Graph = rrd.NewGrapher()
@@ -303,7 +330,7 @@ func (c *Csvhandler) CreateGrapher(dbfile, file_png string, start, end time.Time
 			color_auto = color5
 		}
 
-		DataGrapher(g, c.ArrayDsName[i], ratio, color_auto, c.StartUnix, c.EndUnix, line95.Rsult95th[i])
+		DataGrapher(g, c.ArrayDsName[i], color_auto, c.StartUnix, c.EndUnix, line95.Rsult95th[i], ratio)
 
 	}
 
@@ -371,7 +398,7 @@ func Merge(left []float64, right []float64) []float64 {
 	return result
 }
 
-func (c *Csvhandler) FetchRRD(dbfile string, start, end time.Time, inf map[string]interface{}) (resStruct *FetchRrd, err error) {
+func (c *Csvhandler) FetchRRD(dbfile string, start, end time.Time, ratio float64) (resStruct *FetchRrd, err error) {
 	// Fetch
 	// end := time.Unix(int64(inf["last_update"].(uint)), 0)
 	// start := end.Add(-20 * step * time.Second)
@@ -421,22 +448,25 @@ func (c *Csvhandler) FetchRRD(dbfile string, start, end time.Time, inf map[strin
 	resStruct.XCount = row
 	return
 }
-func (c *Csvhandler) FetchRRDXport(inf map[string]interface{}) {
+func (c *Csvhandler) FetchRRDXport(dbfile string, start, end time.Time, ratio float64) (resStruct *FetchRrd, err error) {
 	// Xport
-	end := time.Unix(int64(inf["last_update"].(uint)), 0)
-	start := end.Add(-20 * step * time.Second)
-	fmt.Printf("Xport Params:\n")
-	fmt.Printf("Start: %s\n", start)
-	fmt.Printf("End: %s\n", end)
-	fmt.Printf("Step: %s\n", step*time.Second)
+
+	resStruct = &FetchRrd{
+		ResTimeList:  []time.Time{},
+		ResValueList: [][]float64{},
+	}
 
 	e := rrd.NewExporter()
-	e.Def("def1", dbfile, "out", "AVERAGE")
-	e.Def("def2", dbfile, "in", "AVERAGE")
-	e.CDef("vdef1", "def1,def2,+")
-	e.XportDef("def1", "out")
-	e.XportDef("def2", "in")
-	e.XportDef("vdef1", "sum")
+
+	for i := 0; i < len(c.ArrayDsName); i++ {
+		def_name := c.ArrayDsName[i]
+		cdef_ratio := fmt.Sprintf("%s,%f,*", def_name, ratio)
+		cdef_name := fmt.Sprintf("%s_%f", def_name, ratio)
+
+		e.Def(def_name, dbfile, c.ArrayDsName[i], "AVERAGE") // "start="+strconv.FormatInt(sUnix, 10), "end="+strconv.FormatInt(eUnix, 10))
+		e.CDef(cdef_name, cdef_ratio)                        // 设置等比大小
+		e.XportDef(cdef_name, "ratio")
+	}
 
 	xportRes, err := e.Xport(start, end, step*time.Second)
 	if err != nil {
@@ -455,13 +485,20 @@ func (c *Csvhandler) FetchRRDXport(inf map[string]interface{}) {
 	row := 0
 	for ti := xportRes.Start.Add(xportRes.Step); ti.Before(end) || ti.Equal(end); ti = ti.Add(xportRes.Step) {
 		fmt.Printf("%s / %d", ti, ti.Unix())
+		resStruct.ResTimeList = append(resStruct.ResTimeList, ti)
+		rowsList := []float64{}
 		for i := 0; i < len(xportRes.Legends); i++ {
 			v := xportRes.ValueAt(i, row)
 			fmt.Printf("\t%e", v)
+			rowsList = append(rowsList, v)
 		}
 		fmt.Printf("\n")
 		row++
+		resStruct.ResValueList = append(resStruct.ResValueList, rowsList)
 	}
+	resStruct.YCount = len(xportRes.Legends)
+	resStruct.XCount = row
+	return
 }
 
 func Sort95th(tempStruct *FetchRrd) {
@@ -477,11 +514,25 @@ func Sort95th(tempStruct *FetchRrd) {
 	}
 }
 
-func Get95th(csvhandler *Csvhandler, info map[string]interface{}) (tempStruct *FetchRrd) {
-	tempStruct, err := csvhandler.FetchRRD(csvhandler.Dbfile, csvhandler.StartTime, csvhandler.EndTime, info)
-	if err != nil {
-		log.Println(err)
+func Get95th(csvhandler *Csvhandler, ratio float64) (tempStruct *FetchRrd) {
+	tempStruct = &FetchRrd{}
+	var err error
+
+	if ratio > 0 && ratio != 1 {
+		tempStruct, err = csvhandler.FetchRRDXport(csvhandler.Dbfile, csvhandler.StartTime, csvhandler.EndTime, ratio)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+	} else if ratio == 1 {
+		tempStruct, err = csvhandler.FetchRRD(csvhandler.Dbfile, csvhandler.StartTime, csvhandler.EndTime, ratio)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		// tempStruct = temp
 	}
+
 	// 返回值多列, 求每列的百分比的第95个值
 	Sort95th(tempStruct)
 	return
@@ -498,6 +549,12 @@ func GoRRDtool(cli *cli.Context) {
 	csvhandler.Pngfile = cli.String("png_file")  // pngfile
 	csvhandler.SouCsv = cli.String("source_csv") // soucsv
 	csvhandler.DstCsv = cli.String("dst_csv")    // dstcsv
+	csvhandler.Ratio = cli.Float64("ratio")
+	ratio := csvhandler.Ratio
+	if ratio < 0 {
+		log.Println("errors: ratio <=0 ")
+		return
+	}
 
 	// data source file cvs
 	err := csvhandler.GetFileCsv(csvhandler.SouCsv)
@@ -508,24 +565,27 @@ func GoRRDtool(cli *cli.Context) {
 	err = csvhandler.CreateRRD(csvhandler.Dbfile, csvhandler.StartTime, csvhandler.LenDS, step)
 	if err != nil {
 		log.Printf("createrrd:%v", err)
+		return
 	}
 	err = csvhandler.UpdateRRD(csvhandler.Dbfile)
 	if err != nil {
 		log.Printf("UpdateRRD:%v", err)
+		return
 	}
 	info, err := rrd.Info(csvhandler.Dbfile)
 	if err != nil {
 		log.Println(err)
+		return
 	}
 	csvhandler.Rrd.Info = info
 
 	// 从rrd中取95值
-	typeStruct := Get95th(csvhandler, info)
-	err = csvhandler.CreateGrapher(csvhandler.Dbfile, csvhandler.Pngfile, csvhandler.StartTime, csvhandler.EndTime, typeStruct)
+	typeStruct := Get95th(csvhandler, ratio)
+	err = csvhandler.CreateGrapher(csvhandler.Dbfile, csvhandler.Pngfile, csvhandler.StartTime, csvhandler.EndTime, typeStruct, ratio)
 	if err != nil {
 		log.Printf("CreateGrapher:%v", err)
+		return
 	}
-	csvhandler.Rrd.Cdef = rrd.NewExporter()
 
 	log.Printf("start_unix:%v, end_unix:%v\n", csvhandler.StartUnix, csvhandler.EndUnix)
 	log.Printf("time:%v,end:%v,count:%v", csvhandler.StartTime, csvhandler.EndTime, len(csvhandler.TimeValue))
@@ -567,6 +627,12 @@ func AddRRDtool(goCom []*cli.Command) []*cli.Command {
 				Aliases: []string{"d"},
 				Usage:   "specify data csv save case: save_*.csv",
 				Value:   "plase waite develop",
+			},
+			&cli.Float64Flag{
+				Name:    "ratio",
+				Aliases: []string{"ra"},
+				Usage:   "specify data csv save case: save_*.csv",
+				Value:   1,
 			},
 		},
 		Action: func(cli *cli.Context) error {

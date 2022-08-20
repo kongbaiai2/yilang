@@ -3,6 +3,7 @@ package config
 import (
 	"bufio"
 	"context"
+	"encoding/csv"
 	"fmt"
 	"io"
 	"log"
@@ -23,7 +24,12 @@ import (
 	"github.com/ziutek/rrd"
 )
 
-func createRrd(srcrrd, filename, savefile, dstrrd string) string {
+type MsgPostquery struct {
+	Ratio float64 `form:"ratio" json:"ratio" xml:"ratio"  binding:"required"`
+}
+
+func createRrd(srcrrd, filename, savefile, dstcsv string, ratio float64) (string, error) {
+
 	csvhandler := &rrdtool.Csvhandler{
 		Headler:   []rrdtool.CsvHeadle{},
 		TimeValue: make(map[int]rrdtool.CsvTimeValue),
@@ -31,41 +37,72 @@ func createRrd(srcrrd, filename, savefile, dstrrd string) string {
 	csvhandler.Dbfile = srcrrd    // dbfile
 	csvhandler.Pngfile = savefile // pngfile
 	csvhandler.SouCsv = filename  // soucsv
-	csvhandler.DstCsv = dstrrd    // dstcsv
+	csvhandler.DstCsv = dstcsv    // dstcsv
 
 	// data source file cvs
 	err := csvhandler.GetFileCsv(csvhandler.SouCsv)
 	if err != nil {
 		log.Println(err)
-		return csvhandler.Pngfile
+		return csvhandler.Pngfile, err
 	}
 	err = csvhandler.CreateRRD(csvhandler.Dbfile, csvhandler.StartTime, csvhandler.LenDS, 300)
 	if err != nil {
 		log.Printf("createrrd:%v", err)
+		return csvhandler.Pngfile, err
 	}
 	err = csvhandler.UpdateRRD(csvhandler.Dbfile)
 	if err != nil {
 		log.Printf("UpdateRRD:%v", err)
+		return csvhandler.Pngfile, err
 	}
 	info, err := rrd.Info(csvhandler.Dbfile)
 	if err != nil {
 		log.Println(err)
+		return csvhandler.Pngfile, err
 	}
 	csvhandler.Rrd.Info = info
 
 	// 从rrd中取95值
-	typeStruct := rrdtool.Get95th(csvhandler, info)
-	err = csvhandler.CreateGrapher(csvhandler.Dbfile, csvhandler.Pngfile, csvhandler.StartTime, csvhandler.EndTime, typeStruct)
+	typeStruct := rrdtool.Get95th(csvhandler, ratio)
+	err = csvhandler.CreateGrapher(csvhandler.Dbfile, csvhandler.Pngfile, csvhandler.StartTime, csvhandler.EndTime, typeStruct, ratio)
 	if err != nil {
 		log.Printf("CreateGrapher:%v", err)
+		return csvhandler.Pngfile, err
 	}
-	csvhandler.Rrd.Cdef = rrd.NewExporter()
+	err = saveCsv(csvhandler.DstCsv, typeStruct)
+	if err != nil {
+		log.Printf("saveCsv:%v", err)
+		return csvhandler.Pngfile, err
+	}
 
 	log.Printf("start_unix:%v, end_unix:%v\n", csvhandler.StartUnix, csvhandler.EndUnix)
 	log.Printf("time:%v,end:%v,count:%v", csvhandler.StartTime, csvhandler.EndTime, len(csvhandler.TimeValue))
-	return csvhandler.Pngfile
+	return csvhandler.Pngfile, err
 }
 
+func saveCsv(csvfilename string, tempStruct *rrdtool.FetchRrd) error {
+	file, err := os.Create(csvfilename)
+	if err != nil {
+		log.Println(err)
+	}
+	defer file.Close()
+	writer := csv.NewWriter(file)
+	writer.Comma = ','
+
+	for i := 0; i < tempStruct.XCount; i++ {
+		xRow := []string{}
+		xRow = append(xRow, tempStruct.ResTimeList[i].Format("2006-01-02 15:04:05"))
+		for j := 0; j < tempStruct.YCount; j++ {
+			xRow = append(xRow, fmt.Sprintln(tempStruct.ResValueList[i][j]))
+		}
+		// log.Printf("count:x-%v,y-%v", tempStruct.XCount, i)
+		writer.Write(xRow)
+
+	}
+
+	writer.Flush()
+	return nil
+}
 func createZip(savezip string, fileZip []string) ([]string, error) {
 	err := rrdtool.Zip(savezip, fileZip)
 	if err != nil {
@@ -115,6 +152,18 @@ func downOctetStream(c *gin.Context, downfile string) error {
 }
 
 func upload(c *gin.Context) {
+	var msgQuery MsgPostquery
+	if err := c.ShouldBind(&msgQuery); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if msgQuery.Ratio < 0 {
+		c.JSON(http.StatusUnauthorized, gin.H{"status": "paras err"})
+		return
+	} else if msgQuery.Ratio == 0 {
+		msgQuery.Ratio = 1
+	}
 
 	dir := "./config/website/tmp"
 	fileList := []string{}
@@ -140,11 +189,11 @@ func upload(c *gin.Context) {
 		// 生成图片并返回
 
 		if strings.Contains(src, ".csv") {
-			createRrd(src+".rrd", src, src+".png", src+"_dst.rrd")
+			createRrd(src+".rrd", src, src+".png", src+"_dst.csv", msgQuery.Ratio)
 		}
 
 		// save filename
-		fileList = append(fileList, src+".rrd", src, src+".png", src+"_dst.rrd")
+		fileList = append(fileList, src+".rrd", src, src+".png", src+"_dst.csv")
 	}
 	log.Println(fileList)
 
@@ -201,7 +250,7 @@ func GinRun(c *cli.Context) {
 		v.GET("/index.html", LimitHandler(lmt), handler.IndexHandler)
 		v.GET("/add.html", handler.AddHandler)
 		v.POST("/postme.html", handler.PostmeHandler)
-		v.POST("/upload", func(c *gin.Context) {
+		v.POST("/upload", LimitHandler(lmt), func(c *gin.Context) {
 			upload(c)
 		})
 	}
