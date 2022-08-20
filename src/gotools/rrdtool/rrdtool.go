@@ -18,10 +18,10 @@ import (
 )
 
 const (
-	dbfile    = "./test.rrd"
-	pngfile   = "./test_rrd1.png"
-	soucsv    = "./test.csv"
-	dstcsv    = "./save_test.csv"
+	// dbfile    = "./test.rrd"
+	// pngfile   = "./test_rrd1.png"
+	// soucsv    = "./test.csv"
+	// dstcsv    = "./save_test.csv"
 	step      = 300
 	heartbeat = 2 * step
 
@@ -224,7 +224,7 @@ func (c *Csvhandler) UpdateRRD(dbfile string) error {
 	return nil
 }
 
-func DataGrapher(g *rrd.Grapher, dsname string, color string, sUnix, eUnix int64, value95 float64, ratio_f float64) {
+func DataGrapher(g *rrd.Grapher, dsname string, color string, sUnix, eUnix int64, value95 float64, ratio_f float64, dbfile string) {
 	def_name := dsname
 	vdef_last := fmt.Sprintf("%s,LAST", def_name)
 	vdef_ave := fmt.Sprintf("%s,AVERAGE", def_name)
@@ -330,7 +330,7 @@ func (c *Csvhandler) CreateGrapher(dbfile, file_png string, start, end time.Time
 			color_auto = color5
 		}
 
-		DataGrapher(g, c.ArrayDsName[i], color_auto, c.StartUnix, c.EndUnix, line95.Rsult95th[i], ratio)
+		DataGrapher(g, c.ArrayDsName[i], color_auto, c.StartUnix, c.EndUnix, line95.Rsult95th[i], ratio, dbfile)
 
 	}
 

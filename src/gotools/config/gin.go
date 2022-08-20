@@ -69,7 +69,7 @@ func createRrd(srcrrd, filename, savefile, dstcsv string, ratio float64) (string
 		log.Printf("CreateGrapher:%v", err)
 		return csvhandler.Pngfile, err
 	}
-	err = saveCsv(csvhandler.DstCsv, typeStruct)
+	err = saveCsv(csvhandler.DstCsv, csvhandler, typeStruct)
 	if err != nil {
 		log.Printf("saveCsv:%v", err)
 		return csvhandler.Pngfile, err
@@ -80,7 +80,7 @@ func createRrd(srcrrd, filename, savefile, dstcsv string, ratio float64) (string
 	return csvhandler.Pngfile, err
 }
 
-func saveCsv(csvfilename string, tempStruct *rrdtool.FetchRrd) error {
+func saveCsv(csvfilename string, csvhead *rrdtool.Csvhandler, tempStruct *rrdtool.FetchRrd) error {
 	file, err := os.Create(csvfilename)
 	if err != nil {
 		log.Println(err)
@@ -88,6 +88,18 @@ func saveCsv(csvfilename string, tempStruct *rrdtool.FetchRrd) error {
 	defer file.Close()
 	writer := csv.NewWriter(file)
 	writer.Comma = ','
+
+	head := [][]string{}
+	for _, vmap := range csvhead.Headler {
+		tmp := []string{}
+		for kk, v := range vmap.HeadlerMap {
+			tmp = append(tmp, kk)
+			tmp = append(tmp, v...)
+			head = append(head, tmp)
+		}
+	}
+	writer.WriteAll(head)
+	writer.Write([]string{"\n"})
 
 	for i := 0; i < tempStruct.XCount; i++ {
 		xRow := []string{}
@@ -175,6 +187,7 @@ func upload(c *gin.Context) {
 	// 获取所有文件
 	files := form.File["files"]
 
+	isZip := false
 	// 遍历所有文件
 	for _, file := range files {
 		// 逐个存
@@ -193,28 +206,34 @@ func upload(c *gin.Context) {
 			if err != nil {
 				c.String(http.StatusBadRequest, fmt.Sprintf("create rrd graph err %s", err.Error()))
 			}
+			isZip = true
 		}
 
 		// save filename
 		fileList = append(fileList, src+".rrd", src, src+".png", src+"_dst.csv")
 	}
-	log.Println(fileList)
 
-	// 多文件压缩zip
-	dstZip := time.Now().Format("20060102T150405")
-	_, err = createZip(dstZip+".zip", fileList)
-	if err != nil {
-		c.String(http.StatusBadRequest, fmt.Sprintf("createZip err %s", err.Error()))
-	}
+	if isZip {
+		log.Println(fileList)
 
-	//返回流
-	err = downOctetStream(c, dstZip+".zip")
-	if err != nil {
-		c.String(http.StatusBadRequest, fmt.Sprintf("downOctetStream err %s", err.Error()))
+		// 多文件压缩zip
+		dstZip := time.Now().Format("20060102T150405")
+		_, err = createZip(dstZip+".zip", fileList)
+		if err != nil {
+			c.String(http.StatusBadRequest, fmt.Sprintf("createZip err %s", err.Error()))
+		}
+
+		//返回zip流
+		err = downOctetStream(c, dstZip+".zip")
+		if err != nil {
+			c.String(http.StatusBadRequest, fmt.Sprintf("downOctetStream err %s", err.Error()))
+		}
+
+		return
 	}
 	// c.File(png_file)
 
-	// c.String(200, fmt.Sprintf("upload ok %d files", len(files)))
+	c.String(200, fmt.Sprintf("upload ok %d files", len(files)))
 
 }
 
