@@ -201,7 +201,7 @@ func upload(c *gin.Context) {
 
 		// 生成图片并返回
 
-		if strings.Contains(src, ".csv") {
+		if strings.HasSuffix(src, ".csv") {
 			_, err := createRrd(src+".rrd", src, src+".png", src+"_dst.csv", msgQuery.Ratio)
 			if err != nil {
 				c.String(http.StatusBadRequest, fmt.Sprintf("create rrd graph err %s", err.Error()))
