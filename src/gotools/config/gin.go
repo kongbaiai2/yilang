@@ -125,9 +125,9 @@ func createZip(savezip string, fileZip []string) ([]string, error) {
 }
 
 // 配置upload，返回下载二进制流
-func downOctetStream(c *gin.Context, downfile string) error {
+func downOctetStream(c *gin.Context, downfile, dir string) error {
 
-	f, err := os.OpenFile(downfile, os.O_RDONLY, os.ModePerm)
+	f, err := os.OpenFile(dir+downfile, os.O_RDONLY, os.ModePerm)
 	if err != nil {
 		return err
 	}
@@ -230,7 +230,7 @@ func upload(c *gin.Context) {
 		}
 
 		//返回zip流
-		err = downOctetStream(c, dstZip+".zip")
+		err = downOctetStream(c, dstZip+".zip", dir)
 		if err != nil {
 			log.Printf("downOctetStream err %s", err.Error())
 			c.String(http.StatusBadRequest, fmt.Sprintf("downOctetStream err %s", err.Error()))
