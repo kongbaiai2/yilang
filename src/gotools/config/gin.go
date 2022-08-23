@@ -84,6 +84,7 @@ func saveCsv(csvfilename string, csvhead *rrdtool.Csvhandler, tempStruct *rrdtoo
 	file, err := os.Create(csvfilename)
 	if err != nil {
 		log.Println(err)
+		return err
 	}
 	defer file.Close()
 	writer := csv.NewWriter(file)
@@ -183,6 +184,7 @@ func upload(c *gin.Context) {
 	form, err := c.MultipartForm()
 	if err != nil {
 		c.String(http.StatusBadRequest, fmt.Sprintf("get err %s", err.Error()))
+		return
 	}
 	// 获取所有文件
 	files := form.File["files"]
@@ -204,7 +206,9 @@ func upload(c *gin.Context) {
 		if strings.HasSuffix(src, ".csv") {
 			_, err := createRrd(src+".rrd", src, src+".png", src+"_dst.csv", msgQuery.Ratio)
 			if err != nil {
+				log.Printf("create rrd graph err %s", err.Error())
 				c.String(http.StatusBadRequest, fmt.Sprintf("create rrd graph err %s", err.Error()))
+				return
 			}
 			isZip = true
 		}
@@ -218,15 +222,19 @@ func upload(c *gin.Context) {
 
 		// 多文件压缩zip
 		dstZip := time.Now().Format("20060102T150405")
-		_, err = createZip(dstZip+".zip", fileList)
+		_, err = createZip(dir+dstZip+".zip", fileList)
 		if err != nil {
+			log.Printf("createZip err %s", err.Error())
 			c.String(http.StatusBadRequest, fmt.Sprintf("createZip err %s", err.Error()))
+			return
 		}
 
 		//返回zip流
 		err = downOctetStream(c, dstZip+".zip")
 		if err != nil {
+			log.Printf("downOctetStream err %s", err.Error())
 			c.String(http.StatusBadRequest, fmt.Sprintf("downOctetStream err %s", err.Error()))
+			return
 		}
 
 		return
@@ -303,15 +311,17 @@ func GinRun(c *cli.Context) {
 		// 监听请求
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("listen: %s\n", err)
+			return
 		}
 	}()
+	log.Println("listen web port:", c.String("port"))
 
 	// 优雅Shutdown（或重启）服务
 	quit := make(chan os.Signal, 2)
 	signal.Notify(quit, os.Interrupt) // syscall.SIGKILL
 	<-quit
 	log.Println("Shutdown Server ...")
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 	if err := srv.Shutdown(ctx); err != nil {
 		log.Fatal("Server Shutdown:", err)
@@ -319,7 +329,7 @@ func GinRun(c *cli.Context) {
 	select {
 	case <-ctx.Done():
 	case <-time.After(5 * time.Second):
-		fmt.Println("timeout")
+		log.Println("timeout")
 	}
 	log.Println("Server exiting")
 }

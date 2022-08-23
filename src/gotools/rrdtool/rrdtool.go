@@ -216,7 +216,7 @@ func (c *Csvhandler) UpdateRRD(dbfile string) error {
 			// log.Println(i, list)
 			err := u.Update(list...)
 			if err != nil {
-				fmt.Println(err)
+				log.Println(err)
 				return err
 			}
 		}
@@ -405,24 +405,24 @@ func (c *Csvhandler) FetchRRD(dbfile string, start, end time.Time, ratio float64
 
 	// end := time.Unix(1659877360, 0)
 	// start := end.Add(-10)
-	// fmt.Printf("Fetch Params:\n")
-	// fmt.Printf("Start: %s\n", start)
-	// fmt.Printf("End: %s\n", end)
-	// fmt.Printf("Step: %s\n", step*time.Second)
+	// log.Printf("Fetch Params:\n")
+	// log.Printf("Start: %s\n", start)
+	// log.Printf("End: %s\n", end)
+	// log.Printf("Step: %s\n", step*time.Second)
 	fetchRes, err := rrd.Fetch(dbfile, "AVERAGE", start, end, step*time.Second)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return
 	}
 	defer fetchRes.FreeValues()
-	fmt.Printf("FetchResult:\n")
-	fmt.Printf("Start: %s\n", fetchRes.Start)
-	fmt.Printf("End: %s\n", fetchRes.End)
-	fmt.Printf("Step: %s\n", fetchRes.Step)
+	log.Printf("FetchResult:\n")
+	log.Printf("Start: %s\n", fetchRes.Start)
+	log.Printf("End: %s\n", fetchRes.End)
+	log.Printf("Step: %s\n", fetchRes.Step)
 	for _, dsName := range fetchRes.DsNames {
-		fmt.Printf("\t%s", dsName)
+		log.Printf("\t%s", dsName)
 	}
-	fmt.Printf("\n")
+	log.Printf("\n")
 
 	row := 0
 	resStruct = &FetchRrd{
@@ -432,14 +432,14 @@ func (c *Csvhandler) FetchRRD(dbfile string, start, end time.Time, ratio float64
 
 	for ti := fetchRes.Start.Add(fetchRes.Step); ti.Before(end) || ti.Equal(end); ti = ti.Add(fetchRes.Step) {
 		resStruct.ResTimeList = append(resStruct.ResTimeList, ti)
-		// fmt.Printf("%s / %d", ti, ti.Unix())
+		// log.Printf("%s / %d", ti, ti.Unix())
 		rowsList := []float64{}
 		for i := 0; i < len(fetchRes.DsNames); i++ {
 			v := fetchRes.ValueAt(i, row)
-			// fmt.Printf("\t%e", v)
+			// log.Printf("\t%e", v)
 			rowsList = append(rowsList, v)
 		}
-		// fmt.Printf("\n")
+		// log.Printf("\n")
 		row++
 		resStruct.ResValueList = append(resStruct.ResValueList, rowsList)
 	}
@@ -470,29 +470,30 @@ func (c *Csvhandler) FetchRRDXport(dbfile string, start, end time.Time, ratio fl
 
 	xportRes, err := e.Xport(start, end, step*time.Second)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
+		return
 	}
 	defer xportRes.FreeValues()
-	fmt.Printf("XportResult:\n")
-	fmt.Printf("Start: %s\n", xportRes.Start)
-	fmt.Printf("End: %s\n", xportRes.End)
-	fmt.Printf("Step: %s\n", xportRes.Step)
+	log.Printf("XportResult:\n")
+	log.Printf("Start: %s\n", xportRes.Start)
+	log.Printf("End: %s\n", xportRes.End)
+	log.Printf("Step: %s\n", xportRes.Step)
 	for _, legend := range xportRes.Legends {
-		fmt.Printf("\t%s", legend)
+		log.Printf("\t%s", legend)
 	}
-	fmt.Printf("\n")
+	log.Printf("\n")
 
 	row := 0
 	for ti := xportRes.Start.Add(xportRes.Step); ti.Before(end) || ti.Equal(end); ti = ti.Add(xportRes.Step) {
-		// fmt.Printf("%s / %d", ti, ti.Unix())
+		// log.Printf("%s / %d", ti, ti.Unix())
 		resStruct.ResTimeList = append(resStruct.ResTimeList, ti)
 		rowsList := []float64{}
 		for i := 0; i < len(xportRes.Legends); i++ {
 			v := xportRes.ValueAt(i, row)
-			// fmt.Printf("\t%e", v)
+			// log.Printf("\t%e", v)
 			rowsList = append(rowsList, v)
 		}
-		// fmt.Printf("\n")
+		// log.Printf("\n")
 		row++
 		resStruct.ResValueList = append(resStruct.ResValueList, rowsList)
 	}
