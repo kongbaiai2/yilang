@@ -432,14 +432,14 @@ func (c *Csvhandler) FetchRRD(dbfile string, start, end time.Time, ratio float64
 
 	for ti := fetchRes.Start.Add(fetchRes.Step); ti.Before(end) || ti.Equal(end); ti = ti.Add(fetchRes.Step) {
 		resStruct.ResTimeList = append(resStruct.ResTimeList, ti)
-		// log.Printf("%s / %d", ti, ti.Unix())
+		log.Printf("%s / %d", ti, ti.Unix())
 		rowsList := []float64{}
 		for i := 0; i < len(fetchRes.DsNames); i++ {
 			v := fetchRes.ValueAt(i, row)
-			// log.Printf("\t%e", v)
-			rowsList = append(rowsList, v)
+			log.Printf("\t%e, %e", v, v*ratio)
+			rowsList = append(rowsList, v*ratio)
 		}
-		// log.Printf("\n")
+		log.Printf("\n")
 		row++
 		resStruct.ResValueList = append(resStruct.ResValueList, rowsList)
 	}
@@ -519,20 +519,13 @@ func Get95th(csvhandler *Csvhandler, ratio float64) (tempStruct *FetchRrd) {
 	tempStruct = &FetchRrd{}
 	var err error
 
-	if ratio > 0 && ratio != 1 {
-		tempStruct, err = csvhandler.FetchRRDXport(csvhandler.Dbfile, csvhandler.StartTime, csvhandler.EndTime, ratio)
-		if err != nil {
-			log.Println(err)
-			return
-		}
-	} else if ratio == 1 {
-		tempStruct, err = csvhandler.FetchRRD(csvhandler.Dbfile, csvhandler.StartTime, csvhandler.EndTime, ratio)
-		if err != nil {
-			log.Println(err)
-			return
-		}
-		// tempStruct = temp
+	// tempStruct, err = csvhandler.FetchRRDXport(csvhandler.Dbfile, csvhandler.StartTime, csvhandler.EndTime, ratio)
+	tempStruct, err = csvhandler.FetchRRD(csvhandler.Dbfile, csvhandler.StartTime, csvhandler.EndTime, ratio)
+	if err != nil {
+		log.Println(err)
+		return
 	}
+	// tempStruct = temp
 
 	// 返回值多列, 求每列的百分比的第95个值
 	Sort95th(tempStruct)
