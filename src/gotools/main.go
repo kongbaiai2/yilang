@@ -15,6 +15,11 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
+var (
+	buildGitRevison string
+	buildTimestamp  string
+)
+
 func TimeOut() error {
 	time2 := int64(1658854666)
 	time1 := time.Now().Unix()
@@ -79,8 +84,8 @@ func main() {
 	t := time.Now()
 
 	app := cli.NewApp()
-	app.Name = "go tools"
-	app.Version = "0.1.0"
+	app.Name = "gotools"
+	app.Version = fmt.Sprintf("\nGitHEAD: %s\nBuidTime: %s", buildGitRevison, buildTimestamp)
 	app.Usage = "some tools for golang"
 	app.Description = "This is how we describe greet the app"
 	app.Authors = []*cli.Author{
