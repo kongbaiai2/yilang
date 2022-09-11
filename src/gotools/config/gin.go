@@ -88,6 +88,7 @@ func saveCsv(csvfilename string, csvhead *rrdtool.Csvhandler, tempStruct *rrdtoo
 	}
 	defer file.Close()
 	writer := csv.NewWriter(file)
+	writer.Write([]string{"\xEF\xBB\xBF"})
 	writer.Comma = ','
 
 	head := [][]string{}
@@ -95,18 +96,28 @@ func saveCsv(csvfilename string, csvhead *rrdtool.Csvhandler, tempStruct *rrdtoo
 		tmp := []string{}
 		for kk, v := range vmap.HeadlerMap {
 			tmp = append(tmp, kk)
-			tmp = append(tmp, v...)
+
+			//  匹配95值
+			if len(v) > 1 {
+				for _, vv := range tempStruct.Rsult95th {
+					tmp95 := fmt.Sprintf("%f", vv)
+					tmp = append(tmp, tmp95)
+				}
+			} else {
+				tmp = append(tmp, v...)
+			}
+
 			head = append(head, tmp)
 		}
 	}
 	writer.WriteAll(head)
-	writer.Write([]string{"\n"})
+	// writer.Write([]string{"\n"})
 
 	for i := 0; i < tempStruct.XCount; i++ {
 		xRow := []string{}
 		xRow = append(xRow, tempStruct.ResTimeList[i].Format("2006-01-02 15:04:05"))
 		for j := 0; j < tempStruct.YCount; j++ {
-			xRow = append(xRow, fmt.Sprintln(tempStruct.ResValueList[i][j]))
+			xRow = append(xRow, fmt.Sprint(tempStruct.ResValueList[i][j]))
 		}
 		// log.Printf("count:x-%v,y-%v", tempStruct.XCount, i)
 		writer.Write(xRow)
@@ -222,7 +233,7 @@ func upload(c *gin.Context) {
 
 		// 多文件压缩zip
 		dstZip := time.Now().Format("20060102T150405")
-		_, err = createZip(dir+dstZip+".zip", fileList)
+		_, err = createZip(dir+"/"+dstZip+".zip", fileList)
 		if err != nil {
 			log.Printf("createZip err %s", err.Error())
 			c.String(http.StatusBadRequest, fmt.Sprintf("createZip err %s", err.Error()))

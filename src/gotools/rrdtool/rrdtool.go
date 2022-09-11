@@ -144,11 +144,15 @@ func (c *Csvhandler) GetFileCsv(csv_file string) error {
 					c.StartTime = the2Time
 					c.StartStr = line[1]
 					c.StartUnix = the2Time.Unix()
+					tempMap.HeadlerMap[line[0]] = line[1:]
+					c.Headler = append(c.Headler, tempMap)
 				}
 				if n == 1 {
 					c.EndTime = the2Time
 					c.EndStr = line[1]
 					c.EndUnix = the2Time.Unix()
+					tempMap.HeadlerMap[line[0]] = line[1:]
+					c.Headler = append(c.Headler, tempMap)
 				}
 				n++
 
@@ -432,14 +436,14 @@ func (c *Csvhandler) FetchRRD(dbfile string, start, end time.Time, ratio float64
 
 	for ti := fetchRes.Start.Add(fetchRes.Step); ti.Before(end) || ti.Equal(end); ti = ti.Add(fetchRes.Step) {
 		resStruct.ResTimeList = append(resStruct.ResTimeList, ti)
-		log.Printf("%s / %d", ti, ti.Unix())
+		// log.Printf("%s / %d", ti, ti.Unix())
 		rowsList := []float64{}
 		for i := 0; i < len(fetchRes.DsNames); i++ {
 			v := fetchRes.ValueAt(i, row)
-			log.Printf("\t%e, %e", v, v*ratio)
+			// log.Printf("\t%e, %e", v, v*ratio)
 			rowsList = append(rowsList, v*ratio)
 		}
-		log.Printf("\n")
+		// log.Printf("\n")
 		row++
 		resStruct.ResValueList = append(resStruct.ResValueList, rowsList)
 	}
@@ -510,7 +514,7 @@ func Sort95th(tempStruct *FetchRrd) {
 		}
 		// log.Printf("count:x-%v,y-%v", tempStruct.XCount, i)
 		sortFloat := MergeSort(xRow)
-		rsult := sortFloat[int(float32(len(sortFloat))*0.95)+1]
+		rsult := sortFloat[int(float32(len(sortFloat))*0.95)]
 		tempStruct.Rsult95th = append(tempStruct.Rsult95th, rsult)
 	}
 }
