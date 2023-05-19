@@ -260,7 +260,7 @@ func DataGrapher(g *rrd.Grapher, dsname string, color string, sUnix, eUnix int64
 		g.Comment("\\n")
 
 		strValue95 := fmt.Sprintf("%v", value95)
-		g.HRule(strValue95, color, "95th\\: ")
+		g.HRule(strValue95, "DA4725", "95th\\: ")
 		print95 := fmt.Sprintf("%.4f", value95)
 		g.Comment(print95)
 		g.Comment("\\n")
@@ -279,7 +279,7 @@ func DataGrapher(g *rrd.Grapher, dsname string, color string, sUnix, eUnix int64
 		g.Comment("\\n")
 
 		strValue95 := fmt.Sprintf("%v", value95)
-		g.HRule(strValue95, color, "95th\\: ")
+		g.HRule(strValue95, "DA4725", "95th\\: ")
 		print95 := fmt.Sprintf("%.4f", value95)
 		g.Comment(print95)
 		g.Comment("\\n")
@@ -310,6 +310,7 @@ func (c *Csvhandler) CreateGrapher(dbfile, file_png string, start, end time.Time
 	g.SetBase(uint(1000))
 	g.SetSlopeMode()
 	g.SetLowerLimit(0)
+	g.SetAltAutoscaleMax()
 	FromTo := fmt.Sprintf("From %v To %v\\c", c.StartStr, c.EndStr)
 	FromTo = strings.Replace(FromTo, ":", "\\:", -1)
 	g.Comment(FromTo)

@@ -1,6 +1,6 @@
 pkg/
 mod/
-go.mod
+bin/
 go.sum
 github.com/
 golang.org/
@@ -9,6 +9,7 @@ golang.org/
 *.png
 *.csv
 *.log
+*.json
 gotools
 !gotools/
 vendor/

@@ -138,7 +138,7 @@ func createZip(savezip string, fileZip []string) ([]string, error) {
 // 配置upload，返回下载二进制流
 func downOctetStream(c *gin.Context, downfile, dir string) error {
 
-	f, err := os.OpenFile(dir+downfile, os.O_RDONLY, os.ModePerm)
+	f, err := os.OpenFile(dir+"/"+downfile, os.O_RDONLY, os.ModePerm)
 	if err != nil {
 		return err
 	}
