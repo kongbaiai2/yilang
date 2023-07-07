@@ -6,6 +6,7 @@ replace (
 	glb_config => ./glb_config
 	init_sub => ./init_sub
 	registration => ./registration
+	sub_dns => ./sub_dns
 	utils => ./utils
 	zabbix_tools => ./zabbix_tools
 )
@@ -37,6 +38,7 @@ require (
 	golang.org/x/text v0.5.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
+	sub_dns v0.0.0-00010101000000-000000000000 // indirect
 	utils v0.0.0-00010101000000-000000000000 // indirect
 	zabbix_tools v0.0.0-00010101000000-000000000000 // indirect
 )

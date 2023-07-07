@@ -138,13 +138,11 @@ func TurnMinutes(ctx *cli.Context) error {
 	}
 
 	itemid, err := GetItemidArray(db, resp, SelectItemidForHostInt)
-	if err != nil {
-		log.Printf("ERROR: GetItemidArray sql: %s,resp:%v err:%v", SelectItemidForHostInt, resp, err)
+	if err != nil || itemid == "" {
+		log.Printf("ERROR: GetItemidArray sql: %s,resp:%v err:%v,itemid:%v", SelectItemidForHostInt, resp, err, itemid)
 		return err
 	}
-	if itemid == "" {
-		return fmt.Errorf("itemid is null: %s", itemid)
-	}
+
 	dataArr, err := GetValueForHistoryUnit(db, resp, SelectValueForHistoryUnit+ConditionTimeToTime, itemid)
 	if err != nil {
 		log.Printf("ERROR: GetValueForHistoryUnit sql: %s,resp:%v err:%v", SelectValueForHistoryUnit+ConditionTimeToTime, resp, err)

@@ -1,0 +1,91 @@
+ 
+ mysql -uzabbix -p -Dzabbix -hlocalhost -P3306
+select itemid  from items where hostid=(select hostid from hosts where host='S6880-48S4Q') and name like '%10GE1/0/8%' 
+select hostid from hosts where host='S6880-48S4Q';
+// hostid=10439
+select itemid  from items where hostid=(select hostid from hosts where host='S6880-48S4Q')  and key_ like '%ifHC%'and name like '%10GE1/0/8%' ;
+// itemid=38048
+select clock,value from history_uint where itemid=38048 limit 10;
+
+ "select h.itemid,h.time,h.value,i.name from (select itemid,from_unixtime(clock) as time,value from history_uint where itemid IN (select itemid  from items where hostid=10439 and (name like '%/7%' or name like '%/8%' or name like '%/9%' or name like '%/10%' or name like '%/11%' or name like '%/12%') and key_ like '%ifHC%' ) and clock >= unix_timestamp('2023/04/01 00:00:00') and clock <= unix_timestamp('2023/05/1 00:00:00')) as h INNER join items i where h.itemid=i.itemid limit 5"
+
+Cacti@123.com
+- DB_NAME=cacti
+     - DB_USER=cacti
+     - DB_PASS=Cacti@123.com
+     - DB_HOST=zabbix.yipeng888.com
+     - DB_PORT=3406
+     - DB_ROOT_PASS=
+     - INITIALIZE_DB=1
+     - TZ=Asia/Shanghai
+mysqldump -uroot -proot --all-databases >/tmp/all.sql
+mysqldump -uroot -proot --databases db1 db2 >/tmp/user.sql
+
+{S6880-48S4Q %10GE1/0/8% %ifHCInOctets% 
+{38048 [
+    {1680343808 3730362648} 
+    {1680344828 4009517832} 
+    {1680344888 3928745328} 
+    {1680344948 3965440440}
+    ]}
+
+
+bz----------------------------------
+6880  
+10GE1/0/7
+pcdn_tool zabbix --host='S6880-48S4Q' --intname='10GE1/0/7' --inout='ifHCInOctets' --start='2023/05/01 00:00:00' --end='2023/06/01 00:01:00'                  #取zabbix数据
+pcdn_tool zabbix --host='S6880-48S4Q' --intname='10GE1/0/8' --inout='ifHCInOctets' --start='2023/05/01 00:00:00' --end='2023/06/01 00:01:00'                  #取zabbix数据
+pcdn_tool zabbix --host='S6880-48S4Q' --intname='10GE1/0/9' --inout='ifHCInOctets' --start='2023/05/01 00:00:00' --end='2023/06/01 00:01:00'  
+pcdn_tool zabbix --host='S6880-48S4Q' --intname='10GE1/0/10' --inout='ifHCInOctets' --start='2023/05/01 00:00:00' --end='2023/06/01 00:01:00'  
+pcdn_tool zabbix --host='S6880-48S4Q' --intname='10GE1/0/11' --inout='ifHCInOctets' --start='2023/05/01 00:00:00' --end='2023/06/01 00:01:00'  
+pcdn_tool zabbix --host='S6880-48S4Q' --intname='10GE1/0/12' --inout='ifHCInOctets' --start='2023/05/01 00:00:00' --end='2023/06/01 00:01:00'  
+
+6730-1
+
+pcdn_tool zabbix --host='S6730-H24X6C_1' --intname='Eth-Trunk1' --inout='ifHCInOctets' --start='2023/05/01 00:00:00' --end='2023/06/01 00:01:00'  
+
+6730-2
+
+eth-trunk 1
+pcdn_tool zabbix --host='S6730-H24X6C_2' --intname='Eth-Trunk1' --inout='ifHCInOctets' --start='2023/05/01 00:00:00' --end='2023/06/01 00:01:00'  
+
+----tx
+
+6730-0
+XGigabitEthernet0/0/1 -10
+
+pcdn_tool zabbix --host='S6730-H24X6C_0' --intname='XGigabitEthernet0/0/1' --inout='ifHCInOctets' --start='2023/05/01 00:00:00' --end='2023/06/01 00:01:00'                  #取zabbix数据
+pcdn_tool zabbix --host='S6730-H24X6C_0' --intname='XGigabitEthernet0/0/2' --inout='ifHCInOctets' --start='2023/05/01 00:00:00' --end='2023/06/01 00:01:00'
+pcdn_tool zabbix --host='S6730-H24X6C_0' --intname='XGigabitEthernet0/0/3' --inout='ifHCInOctets' --start='2023/05/01 00:00:00' --end='2023/06/01 00:01:00'
+pcdn_tool zabbix --host='S6730-H24X6C_0' --intname='XGigabitEthernet0/0/4' --inout='ifHCInOctets' --start='2023/05/01 00:00:00' --end='2023/06/01 00:01:00'
+pcdn_tool zabbix --host='S6730-H24X6C_0' --intname='XGigabitEthernet0/0/5' --inout='ifHCInOctets' --start='2023/05/01 00:00:00' --end='2023/06/01 00:01:00'
+pcdn_tool zabbix --host='S6730-H24X6C_0' --intname='XGigabitEthernet0/0/6' --inout='ifHCInOctets' --start='2023/05/01 00:00:00' --end='2023/06/01 00:01:00'
+pcdn_tool zabbix --host='S6730-H24X6C_0' --intname='XGigabitEthernet0/0/7' --inout='ifHCInOctets' --start='2023/05/01 00:00:00' --end='2023/06/01 00:01:00'
+pcdn_tool zabbix --host='S6730-H24X6C_0' --intname='XGigabitEthernet0/0/8' --inout='ifHCInOctets' --start='2023/05/01 00:00:00' --end='2023/06/01 00:01:00'
+pcdn_tool zabbix --host='S6730-H24X6C_0' --intname='XGigabitEthernet0/0/9' --inout='ifHCInOctets' --start='2023/05/01 00:00:00' --end='2023/06/01 00:01:00'
+pcdn_tool zabbix --host='S6730-H24X6C_0' --intname='XGigabitEthernet0/0/10' --inout='ifHCInOctets' --start='2023/05/01 00:00:00' --end='2023/06/01 00:01:00'
+
+
+6730-1
+100GE1/0/2
+pcdn_tool zabbix --host='S6730-H24X6C_1' --intname='100GE0/0/2' --inout='ifHCInOctets' --start='2023/05/01 00:00:00' --end='2023/06/01 00:01:00'  
+6730-2
+100GE1/0/2
+pcdn_tool zabbix --host='S6730-H24X6C_2' --intname='100GE0/0/2' --inout='ifHCInOctets' --start='2023/05/01 00:00:00' --end='2023/06/01 00:01:00'  
+
+6730-3
+XGigabitEthernet0/0/1  -10
+pcdn_tool zabbix --host='S6730-H24X6C_3' --intname='XGigabitEthernet0/0/1' --inout='ifHCInOctets' --start='2023/05/01 00:00:00' --end='2023/06/01 00:01:00'  
+pcdn_tool zabbix --host='S6730-H24X6C_3' --intname='XGigabitEthernet0/0/2' --inout='ifHCInOctets' --start='2023/05/01 00:00:00' --end='2023/06/01 00:01:00'  
+pcdn_tool zabbix --host='S6730-H24X6C_3' --intname='XGigabitEthernet0/0/3' --inout='ifHCInOctets' --start='2023/05/01 00:00:00' --end='2023/06/01 00:01:00'  
+pcdn_tool zabbix --host='S6730-H24X6C_3' --intname='XGigabitEthernet0/0/4' --inout='ifHCInOctets' --start='2023/05/01 00:00:00' --end='2023/06/01 00:01:00'  
+pcdn_tool zabbix --host='S6730-H24X6C_3' --intname='XGigabitEthernet0/0/5' --inout='ifHCInOctets' --start='2023/05/01 00:00:00' --end='2023/06/01 00:01:00'  
+pcdn_tool zabbix --host='S6730-H24X6C_3' --intname='XGigabitEthernet0/0/6' --inout='ifHCInOctets' --start='2023/05/01 00:00:00' --end='2023/06/01 00:01:00'  
+pcdn_tool zabbix --host='S6730-H24X6C_3' --intname='XGigabitEthernet0/0/7' --inout='ifHCInOctets' --start='2023/05/01 00:00:00' --end='2023/06/01 00:01:00'  
+pcdn_tool zabbix --host='S6730-H24X6C_3' --intname='XGigabitEthernet0/0/8' --inout='ifHCInOctets' --start='2023/05/01 00:00:00' --end='2023/06/01 00:01:00'  
+pcdn_tool zabbix --host='S6730-H24X6C_3' --intname='XGigabitEthernet0/0/9' --inout='ifHCInOctets' --start='2023/05/01 00:00:00' --end='2023/06/01 00:01:00'  
+pcdn_tool zabbix --host='S6730-H24X6C_3' --intname='XGigabitEthernet0/0/10' --inout='ifHCInOctets' --start='2023/05/01 00:00:00' --end='2023/06/01 00:01:00'  
+
+
+
+

@@ -27,6 +27,8 @@ func main() {
 	initLog()
 
 	t := time.Now()
-	defer log.Println(time.Since(t))
+	defer func() { log.Println(time.Since(t)) }()
+
 	registration.Run(os.Args)
+
 }

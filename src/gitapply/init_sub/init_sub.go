@@ -1,6 +1,7 @@
 package initsub
 
 import (
+	_ "sub_dns"
 	_ "zabbix_tools"
 )
 
