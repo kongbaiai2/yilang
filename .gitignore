@@ -1,0 +1,17 @@
+pkg/
+mod/
+bin/
+go.sum
+github.com/
+golang.org/
+*.bak
+*.exe
+*.png
+*.csv
+*.log
+*.json
+gotools
+!gotools/
+vendor/
+.DS_Store
+src/.DS_Store
