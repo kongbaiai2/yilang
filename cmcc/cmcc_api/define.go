@@ -11,9 +11,7 @@ var (
 	dbPath string
 	TOTAL  = "TOTAL"
 
-	isFlushChart    = true
-	buildGitRevison string
-	buildTimestamp  string
+	isFlushChart = true
 )
 
 const (
@@ -82,9 +80,9 @@ type AreaList struct {
 type StatisticBw struct {
 	Time      string  `json:"time" gorm:"type:varchar(20) COMMENT '时间'"`
 	Value     float64 `json:"value" gorm:"type:decimal(30,10) COMMENT '值'"`
-	Provinces string  `json:"provinces" gorm:"type:varchar(10) COMMENT '地市';uniqueIndex:prov_unix"`
-	UnixTime  int64   `json:"unix_time,omitempty" gorm:"type:int(64);uniqueIndex:prov_unix"`
-	Domain    string  `json:"domain" gorm:"type:varchar(32) COMMENT 'domain'"`
+	Provinces string  `json:"provinces" gorm:"type:varchar(10) COMMENT '地市';uniqueIndex:prov_unix_domain"`
+	UnixTime  int64   `json:"unix_time,omitempty" gorm:"type:int(64);uniqueIndex:prov_unix_domain"`
+	Domain    string  `json:"domain" gorm:"type:varchar(32) COMMENT 'domain';uniqueIndex:prov_unix_domain"`
 }
 
 type ProvincesName struct {

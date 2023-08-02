@@ -1,12 +1,10 @@
 package cmcc_api
 
 import (
-	"flag"
 	"fmt"
 	"log"
 	"net/http"
 	"time"
-	"utils"
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/gin-gonic/gin"
@@ -15,38 +13,42 @@ import (
 )
 
 type cronJob struct {
-	ctx TenantItem
+	ctx *TenantItem
 }
 type cronJobHour struct {
-	ctx TenantItem
+	ctx *TenantItem
 }
 
 func setCron() {
+	isAlarm := true
+	if isAlarm {
 
+		// 监听告警事件
+		go AlarmListenDb()
+
+		// 骤降告警,触发告警
+		go AlarmFall()
+
+		isAlarm = false
+	}
+
+	mapAlertCfg = make(map[string]alertCfg, 5)
 	c := cron.New()
-	for _, ctx := range cfg.CustomList {
+	for _, ctxPtr := range cfg.CustomList {
+		ctx := ctxPtr
 		mapAlertCfg[ctx.Tenant.Domain] = ctx.GetData.Alert
-		isAlarm := true
+		// isAlarm := true
 		cronjob := &cronJob{
-			ctx: ctx,
+			ctx: &ctx,
 		}
 		cronjobhour := &cronJobHour{
-			ctx: ctx,
+			ctx: &ctx,
 		}
 		c.AddJob(ctx.GetData.CronTime, cronjob)
 		c.AddJob(ctx.GetData.CranTimeOneHour, cronjobhour)
 
-		if isAlarm {
+		CmccDomainAdd(ctx.Tenant.Domain, "cmcc", "zhuhaiyidong")
 
-			// 监听告警事件
-			go AlarmListenDb()
-
-			// 骤降告警,触发告警
-			go AlarmFall()
-
-			CmccDomainAdd(ctx.Tenant.Domain, "cmcc", "zhuhaiyidong")
-			isAlarm = false
-		}
 	}
 
 	c.Start()
@@ -55,7 +57,7 @@ func setCron() {
 func (c *cronJob) Run() {
 	doCronTask(c.ctx)
 }
-func doCronTask(ctx TenantItem) {
+func doCronTask(ctx *TenantItem) {
 	// 对外接口刷新chart的标记
 	isFlushChart = true
 	// 取start end之间的数据。这里是一小时前 到 半小时前的数据
@@ -69,7 +71,7 @@ func doCronTask(ctx TenantItem) {
 func (c *cronJobHour) Run() {
 	doCronTaskOneHour(c.ctx)
 }
-func doCronTaskOneHour(ctx TenantItem) {
+func doCronTaskOneHour(ctx *TenantItem) {
 	err := ctx.cmcc(1*time.Hour, 3*time.Hour)
 	if err != nil {
 		log.Println(err)
@@ -201,25 +203,15 @@ type mailCfg struct {
 	Password   string   `mapstructure:"password"`
 }
 type chartCfg struct {
-	ShowTime string `mapstructure:"show_time"`
+	ShowTime string `mapstructure:"show_hour"`
 }
 
 var cfg Config
-var key []byte = []byte("t7h3he2d")
+var key []byte
 var mapAlertCfg map[string]alertCfg
 
-func NewRun() {
-
-	pAppVersion := flag.Bool("version", false, "show version")
-	pEncrypt := flag.String("encrypt", "", "use encrypt")
-	flag.Parse()
-	if *pAppVersion {
-		log.Fatalf("Git Revision: %s\ntime: %s", buildGitRevison, buildTimestamp)
-	}
-	if *pEncrypt != "" {
-		log.Fatal(utils.EncryptDes(*pEncrypt, key))
-	}
-
+func NewRun(keysyn []byte) {
+	key = keysyn
 	t := time.Now()
 	defer func() {
 		log.Println(time.Since(t))

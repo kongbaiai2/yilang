@@ -96,9 +96,11 @@ func CreateSQLiteDb() {
 }
 
 func writeBwToDb(resultStruct []ResponseStatistic, host string) error {
-	var sum float64
 	for _, v := range resultStruct {
 		domain := v.Domain
+		num := 0
+		num = len(v.Data)
+		var sum float64
 		for _, vv := range v.Data {
 			sum = 0
 			the_time, err := time.ParseInLocation("2006-01-02 15:04:05", vv.Time, time.Local)
@@ -108,20 +110,22 @@ func writeBwToDb(resultStruct []ResponseStatistic, host string) error {
 			}
 
 			for _, data := range vv.Provinces {
-				err := StatisticBwReplace(vv.Time, data.Area, data.Value, unixTime, domain)
-				if err != nil {
-					return err
-				}
 				if data.Area == TOTAL {
-					sum = data.Value
+					err := StatisticBwReplace(vv.Time, data.Area, data.Value, unixTime, domain)
+					if err != nil {
+						return err
+					}
+					sum += data.Value
 				}
 			}
-			// 数据为0直接告警
-			if sum == 0 {
-				warnerChan <- NewAlarmDb(host, "数据为零: ", v.Domain, v.Domain, "mail", 1)
-			}
-			log.Printf("insert into: %v, total: %v", vv.Time, sum)
 		}
+
+		// 数据为0直接告警
+		if sum == 0 {
+			warnerChan <- NewAlarmDb(host, "数据为零: ", v.Domain, v.Domain, "mail", 1)
+		}
+		// log.Printf("insert into: %v, total: %v,domain: %v", vv.Time, sum, v.Domain)
+		log.Printf("insert into count: %d, total: %f,domain %s", num, sum, domain)
 	}
 	return nil
 }
@@ -175,8 +179,8 @@ func ProvincesNameSelect() ([]ProvincesName, error) {
 	return resq, err
 }
 
-func AlarmTableReplace(status, hit int, host, body, key, usePlugs string) error {
-	ins := &AlarmTable{Status: status, Hit: hit, Host: host, Body: body, Ticket: key, UsePlugs: usePlugs}
+func AlarmTableReplace(status, hit int, host, body, key, domain, usePlugs string) error {
+	ins := &AlarmTable{Status: status, Hit: hit, Host: host, Body: body, Ticket: key, Domain: domain, UsePlugs: usePlugs}
 	// 插入冲突时，用最新的覆盖。
 
 	return db.Clauses(clause.OnConflict{UpdateAll: true}).Create(&ins).Error

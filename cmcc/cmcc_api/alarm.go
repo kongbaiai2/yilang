@@ -17,32 +17,40 @@ func diffFallData(alert alertCfg, prov []StatisticBw, start time.Duration, domai
 	if len(prov) < 2 {
 		return nil
 	}
+	ticket := ""
+	body := ""
+	isalarm := false
 	if prov[0].UnixTime < startTime {
-		the_time, err := time.ParseInLocation("2006-01-02 15:04:05", prov[0].Time, time.Local)
-		if err != nil {
-			return err
-		}
-		ticket := "not get cmcc api data: "
-		body := fmt.Sprintf("befor %v minute,dbtime:%v,curtime:%v<br>", start, the_time, time.Now())
-		warnerChan <- NewAlarmDb(host, ticket, domain, body, "mail", 1)
+		// the_time, err := time.ParseInLocation("2006-01-02 15:04:05", prov[0].Time, time.Local)
+		// if err != nil {
+		// 	return err
+		// }
+		ticket += "没数据:"
+		body += fmt.Sprintf(" %v 分钟之前没数据,\n\r<br>最后一次时间:%v,最后一次数据:%v\n\r<br>", start, prov[0].Time, prov[0].Value)
+		isalarm = true
 	}
 
 	i := 0
 	if prov[i].UnixTime-prov[i+1].UnixTime != 300 {
-		body := fmt.Sprintf("\n\r%v to %v<br>", prov[i].UnixTime, prov[i+1].UnixTime)
-		ticket := "cmcc api data lack: "
-		warnerChan <- NewAlarmDb(host, ticket, domain, body, "mail", 1)
+		body += fmt.Sprintf("\n\r<br>当前时间:%v, 前一个时间:%v\n\r<br>", prov[i].Time, prov[i+1].Time)
+		ticket += "间隔5分钟:"
+		isalarm = true
 	}
 	// 骤降，小于上个数的Threshold比例
 	if prov[i].Value < prov[i+1].Value*float64(alert.Threshold) {
-		body := fmt.Sprintf("%v to %v, \r\n<br>Hit:%v<%v * %v", prov[i].Time, prov[i+1].Time, prov[i].Value, prov[i+1].Value, alert.Threshold)
-		ticket := "cmcc api data fall: "
-		warnerChan <- NewAlarmDb(host, ticket, domain, body, "mail", 1)
+		body += fmt.Sprintf("当前时间:%v \r\n<br>前一个时间:%v, \r\n<br>当前值:%v 小于 前一个值:%v * %v\n\r<br>", prov[i].Time, prov[i+1].Time, prov[i].Value, prov[i+1].Value, alert.Threshold)
+		ticket += "骤降:"
+		isalarm = true
 	}
-
+	if isalarm {
+		warnerChan <- NewAlarmDb(host, ticket, domain, body, "mail", 1)
+		log.Printf("alearm domain:%s,host:%s,data:%v", domain, host, prov)
+		isalarm = false
+	}
 	return nil
 }
 func AlarmFall() {
+	time.Sleep(10 * time.Second)
 	for {
 		for domain, alertcfg := range mapAlertCfg {
 			// 取db最新值汇总,Provicnes=TOTAL,start为开始时间
@@ -50,9 +58,10 @@ func AlarmFall() {
 			if err != nil {
 				log.Println(domain, " get statistic bw data failed", err)
 			}
-			diffFallData(alertcfg, TotalProvicnes, 30*time.Minute, domain, alertcfg.MailWarn.Host)
-		}
+			t := time.Duration(alertcfg.DelayMinute+30) * time.Minute
 
+			diffFallData(alertcfg, TotalProvicnes, t, domain, alertcfg.MailWarn.Host)
+		}
 		time.Sleep(5 * time.Minute)
 	}
 }
@@ -88,6 +97,7 @@ func (a *AlarmOldNew) insertAlarmToDB() error {
 	host := a.New.Host
 	usePlugs := a.New.UsePlugs
 	body := a.New.Body
+	domain := a.New.Domain
 	// 查ticket，host告警是否存在，更新alarm信息
 	a.OldDB = a.getAlarmInfoFromDb(ticket, host)
 	if a.OldDB.Ticket == ticket && a.OldDB.Host == host {
@@ -98,7 +108,7 @@ func (a *AlarmOldNew) insertAlarmToDB() error {
 	}
 
 	// 60分钟前未触发的告警，则删除
-	interval := 60 * time.Minute
+	interval := 180 * time.Minute
 	now := time.Now()
 	currT := now.Sub(a.OldDB.UpdatedAt)
 	if a.OldDB.UpdatedAt != a.New.UpdatedAt && currT > interval {
@@ -112,8 +122,8 @@ func (a *AlarmOldNew) insertAlarmToDB() error {
 		hit = 1
 	}
 
-	log.Printf("Alarm triggered for the %d count, host:%v,ticket:%v,body:%v,plugs:%v", hit, host, ticket, body, usePlugs)
-	err := AlarmTableReplace(1, hit, host, body, ticket, usePlugs)
+	log.Printf("Alarm triggered for the hit: %d, host:%v,ticket:%v,plugs:%v,body:%v", hit, host, ticket, usePlugs, body)
+	err := AlarmTableReplace(1, hit, host, body, ticket, domain, usePlugs)
 	if err != nil {
 		log.Println(err)
 		return err
@@ -128,15 +138,15 @@ func (a *AlarmOldNew) AlarmPeakLimit() bool {
 	if a.New.Status == 0 {
 		return true
 	}
-	// 小于2，100以内 10的倍数不削峰，100以外50倍数不削
-	if a.OldDB.Hit < 2 {
+	// 削峰
+	if a.OldDB.Hit < 4 {
 		return false
 	}
-	if a.OldDB.Hit%10 > 100 {
-		return a.OldDB.Hit%50 == 0
+	if a.OldDB.Hit > 100 {
+		return a.OldDB.Hit%50 != 0
 	}
-	if a.OldDB.Hit%10 == 0 {
-		return false
+	if a.OldDB.Hit > 10 {
+		return a.OldDB.Hit%10 != 0
 	}
 	return true
 }
@@ -148,18 +158,20 @@ func (a *AlarmOldNew) GetDomain() string {
 	return a.New.Domain
 }
 func (a *AlarmOldNew) UseMail(mcfg mailCfg) error {
+	body := fmt.Sprintf("时间：%s\r\n<br>告警项：%s\r\n<br>告警内容：%s\r\n<br>告警域名：%s\r\n<br>命中数：%d\r\n<br>",
+		time.Now().Format(time.RFC3339), a.New.Ticket, a.New.Body, a.New.Domain, a.OldDB.Hit)
 	m_cli := &M_cli{
 		From:        mcfg.MailFrom,
 		To:          mcfg.MailTo,
 		Subject:     a.New.Host,
-		Body:        time.Now().Format(time.RFC3339) + "<br>" + a.New.Ticket + "<br>" + a.New.Body,
+		Body:        body,
 		Enclosure:   "", // 附件
 		Smtp_domain: mcfg.SmtpDomain,
 		Port:        mcfg.Port,
 		User:        mcfg.User,
 		Password:    mcfg.Password,
 	}
-	log.Printf("send to:%v, body:%v", mcfg.MailTo, a.New.Body)
+	log.Printf("send to:%v, domain: %s", mcfg.MailTo, a.New.Domain)
 
 	err := m_cli.SendMail()
 	if err != nil {

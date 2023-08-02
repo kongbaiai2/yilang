@@ -178,8 +178,5 @@ func (t *TenantItem) cmcc(end, start time.Duration) error {
 		return err
 	}
 
-	// bw数据存入db
-	// writeBwToDb(resultStruct)
-
-	return writeBwToDb(resultStruct, t.Tenant.Host)
+	return writeBwToDb(resultStruct, t.GetData.Alert.MailWarn.Host)
 }
