@@ -90,7 +90,7 @@ func initDbAndLog() {
 		log.SetOutput(twoWrite)
 	}
 
-	CreateSQLiteDb()
+	CreateMysqlDb(cfg.DbCfg)
 	initInfoToDb()
 
 }

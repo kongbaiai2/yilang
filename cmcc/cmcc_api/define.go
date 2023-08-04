@@ -7,9 +7,8 @@ import (
 )
 
 var (
-	db     *gorm.DB
-	dbPath string
-	TOTAL  = "TOTAL"
+	db    *gorm.DB
+	TOTAL = "TOTAL"
 
 	isFlushChart = true
 )

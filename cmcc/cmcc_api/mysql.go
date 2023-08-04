@@ -18,7 +18,7 @@ func init() {
 	// 	log.Fatal("get home dir failed:", err)
 	// }
 	// dbPath = path.Join(dir, ".felix/sqlite.db")
-	dbPath = "cmcc:cmccZH@123.com@tcp(localhost:3306)/cmcc?charset=utf8mb4&parseTime=True&loc=Local"
+	// dbPath = "cmcc:cmccZH@123.com@tcp(localhost:3306)/cmcc?charset=utf8mb4&parseTime=True&loc=Local"
 	// "user:pass@tcp(127.0.0.1:3306)/dbname?charset=utf8mb4&parseTime=True&loc=Local"
 }
 
@@ -59,7 +59,7 @@ func initInfoToDb() {
 	ProvincesNameReplace(TOTAL, "全国95峰值")
 }
 
-func CreateSQLiteDb() {
+func CreateMysqlDb(dbPath string) {
 	// log.Println("sql in:")
 	// sqlite, err := gorm.Open(mysql.Open(dbPath), &gorm.Config{})
 	sql, err := gorm.Open(mysql.New(mysql.Config{
