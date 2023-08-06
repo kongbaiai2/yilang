@@ -101,7 +101,7 @@ func InitLog(logname string) {
 	if err != nil {
 		log.Fatal("get home dir failed:", err)
 	}
-	logFile, err := os.OpenFile(path.Join(dir, logname), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0777)
+	logFile, err := os.OpenFile(path.Join(dir, "log", logname), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0777)
 	twoWrite := io.MultiWriter(logFile, os.Stdout)
 	if err != nil {
 		log.Panic(err)
