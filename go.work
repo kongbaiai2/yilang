@@ -3,6 +3,8 @@ go 1.19
 use (
 	../github/mycode/src/tempwork
 	./client/tools
+	// ./cmcc/auto_limit
 	./cmcc/cmcc_api
+	./test
 	./utils
 )

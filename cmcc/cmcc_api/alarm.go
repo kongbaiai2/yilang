@@ -223,7 +223,7 @@ func AlarmListenDb() {
 			}
 		case <-ticker.C:
 			// 定期邮件，判断服务正常。
-			warnerChan <- NewAlarmDb("珠海移动CDN数据API", "定期自检: ", "zhimage.guangdongyunchen.com", "是否发邮件正常，可忽略", "mail", 1)
+			warnerChan <- NewAlarmDb("珠海移动CDN数据API", "定期自检: ", "yunchen.guangdongyunchen.com", "是否发邮件正常，可忽略", "mail", 1)
 		}
 	}
 }

@@ -36,6 +36,10 @@ func setCron() {
 	mapAlertCfg = make(map[string]alertCfg, 5)
 	c := cron.New()
 	for _, ctxPtr := range cfg.CustomList {
+		if ctxPtr.IsDisable {
+			log.Println(ctxPtr.Tenant.Domain, "is disable.")
+			continue
+		}
 		ctx := ctxPtr
 		mapAlertCfg[ctx.Tenant.Domain] = ctx.GetData.Alert
 		// isAlarm := true
@@ -83,6 +87,7 @@ func Hello(c *gin.Context) {
 	c.String(200, "hello %s", "world")
 }
 func runGin() {
+	GenerateUuid()
 	r := gin.Default()
 
 	r.LoadHTMLGlob("html/*")
@@ -100,6 +105,7 @@ func runGin() {
 			"result": c.Param("content"),
 		})
 	})
+	r.GET("/auto", Auto_sw_cmds)
 	r.GET("/hello", Hello)
 	r.Run(":" + cfg.ListenPort)
 }
@@ -147,7 +153,7 @@ func GetConfig(cfg *Config, cfgname, suffix string, dirArr ...string) {
 
 	// 监听配置文件变更
 	viper.OnConfigChange(func(e fsnotify.Event) {
-		log.Println("Config file changed:", e.Name)
+		log.Warn("Config file changed:", e.Name)
 		err = viper.Unmarshal(cfg)
 		if err != nil {
 			panic(err)
@@ -173,11 +179,22 @@ type Config struct {
 	DbCfg      string       `mapstructure:"db_config"`
 	Licence    string       `mapstructure:"licence"`
 	CustomList []TenantItem `mapstructure:"custom_list"`
+	AutoLimits []AutoLimit  `mapstructure:"auto_limit"`
+}
+type AutoLimit struct {
+	IsDisable   bool     `mapstructure:"is_disable"`
+	SwIpList    []string `mapstructure:"sw_ip_list"`
+	Description string   `mapstructure:"description"`
+	Cmd         string   `mapstructure:"cmd"`
+	UndoCmd     string   `mapstructure:"undo_cmd"`
+	Encrypt     string   `mapstructure:"encrypt"`
+	User        string   `mapstructure:"user"`
 }
 type TenantItem struct {
-	Tenant  tenantCfg  `mapstructure:"tenant"`
-	GetData getDataCfg `mapstructure:"get_data"`
-	Chart   chartCfg   `mapstructure:"chart"`
+	Tenant    tenantCfg  `mapstructure:"tenant"`
+	GetData   getDataCfg `mapstructure:"get_data"`
+	Chart     chartCfg   `mapstructure:"chart"`
+	IsDisable bool       `mapstructure:"is_disable"`
 }
 type tenantCfg struct {
 	Domain       string `mapstructure:"domain"`
@@ -214,7 +231,11 @@ var cfg Config
 var key []byte
 var mapAlertCfg map[string]alertCfg
 var log *logrus.Logger
+var glb_uuid string
 
+func GetCfg() *Config {
+	return &cfg
+}
 func NewRun(keysyn []byte) {
 	log = logrus.New()
 	key = keysyn

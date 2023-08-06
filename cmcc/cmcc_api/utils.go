@@ -76,7 +76,7 @@ func JsonToMap(str string) map[string]interface{} {
 }
 
 func initDbAndLog(file string) {
-	InitLog(file)
+	InitLog(log, file)
 
 	CreateMysqlDb(cfg.DbCfg)
 	initInfoToDb()
@@ -86,7 +86,7 @@ func initDbAndLog(file string) {
 //	logmap := log.WithField("common", "this is a common field")
 //
 // log.info() or logmap.info()
-func InitLog(logname string) {
+func InitLog(log *logrus.Logger, logname string) {
 	// log.SetFormatter(&log.JSONFormatter{})
 	// format = "2006-01-02 15:04:05.00"
 	log.SetFormatter(&logrus.TextFormatter{ForceColors: true, TimestampFormat: "02 15:04:05", FullTimestamp: true,
@@ -101,7 +101,7 @@ func InitLog(logname string) {
 	if err != nil {
 		log.Fatal("get home dir failed:", err)
 	}
-	logFile, err := os.OpenFile(path.Join(dir, logname), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0777)
+	logFile, err := os.OpenFile(path.Join(dir, "log", logname), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0777)
 	twoWrite := io.MultiWriter(logFile, os.Stdout)
 	if err != nil {
 		log.Panic(err)
@@ -111,6 +111,7 @@ func InitLog(logname string) {
 	log.SetLevel(logrus.WarnLevel)
 
 	log.SetReportCaller(true)
+	log.Infof("write log to %s", path.Join(dir, "log", logname))
 
 }
 
