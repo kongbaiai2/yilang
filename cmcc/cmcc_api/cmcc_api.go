@@ -6,12 +6,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
+
 	"net/http"
 	"strings"
 	"time"
 	"unsafe"
 	"utils"
+
+	"github.com/sirupsen/logrus"
 )
 
 func (t *TenantItem) GetToken(cmcc *Cmcc, url string) error {
@@ -157,6 +159,7 @@ func (c *Cmcc) GetStatisticCDN(detailed string, getArgs StatisticArgs, result *[
 }
 
 func (t *TenantItem) cmcc(end, start time.Duration) error {
+	log.SetLevel(logrus.Level(cfg.LogLevel))
 	err := utils.Licence(cfg.Licence, key)
 	if err != nil {
 		log.Fatalf("Licence errors: %v", err)

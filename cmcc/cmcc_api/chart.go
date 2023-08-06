@@ -2,7 +2,6 @@ package cmcc_api
 
 import (
 	"fmt"
-	"log"
 	"math/rand"
 	"os"
 	"strconv"

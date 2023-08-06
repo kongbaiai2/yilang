@@ -5,11 +5,13 @@ import (
 	"crypto/tls"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"io"
-	"io/ioutil"
-	"log"
 	"os"
 	"path"
+	"runtime"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/mitchellh/go-homedir"
 	"gopkg.in/gomail.v2"
@@ -73,24 +75,57 @@ func JsonToMap(str string) map[string]interface{} {
 	return tempMap
 }
 
-func initDbAndLog() {
-	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
+func initDbAndLog(file string) {
+	InitLog(file)
+
+	CreateMysqlDb(cfg.DbCfg)
+	initInfoToDb()
+
+}
+
+//	logmap := log.WithField("common", "this is a common field")
+//
+// log.info() or logmap.info()
+func InitLog(logname string) {
+	// log.SetFormatter(&log.JSONFormatter{})
+	// format = "2006-01-02 15:04:05.00"
+	log.SetFormatter(&logrus.TextFormatter{ForceColors: true, TimestampFormat: "02 15:04:05", FullTimestamp: true,
+		CallerPrettyfier: func(f *runtime.Frame) (function string, file string) {
+			// f.Func.Name()
+			file = path.Base(f.File)
+			function = fmt.Sprintf("%s:%d", file, f.Line)
+			return function, ""
+		}})
+
 	dir, err := homedir.Dir()
 	if err != nil {
 		log.Fatal("get home dir failed:", err)
 	}
-	logdir := path.Join(dir, "log/cmcc_alarm.log")
-	// log.Println(logdir)
-	logFile, err := os.OpenFile(logdir, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0777)
+	logFile, err := os.OpenFile(path.Join(dir, logname), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0777)
 	twoWrite := io.MultiWriter(logFile, os.Stdout)
 	if err != nil {
-		log.Printf("failed to open %v, discarding any log.", logdir)
-		log.SetOutput(ioutil.Discard)
-	} else {
-		log.SetOutput(twoWrite)
+		log.Panic(err)
 	}
+	log.SetOutput(twoWrite)
 
-	CreateMysqlDb(cfg.DbCfg)
-	initInfoToDb()
+	log.SetLevel(logrus.WarnLevel)
+
+	log.SetReportCaller(true)
+
+}
+
+func getCallerInfo(skip int, isonly bool) (info string) {
+
+	pc, file, lineNo, ok := runtime.Caller(skip)
+	if !ok {
+		info = "runtime.Caller() failed"
+		return
+	}
+	funcName := runtime.FuncForPC(pc).Name()
+	fileName := path.Base(file) // Base函数返回路径的最后一个元素
+	if isonly {
+		return file
+	}
+	return fmt.Sprintf("%s, %s:%d ", funcName, fileName, lineNo)
 
 }

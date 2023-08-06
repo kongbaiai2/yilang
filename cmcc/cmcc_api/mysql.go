@@ -1,7 +1,6 @@
 package cmcc_api
 
 import (
-	"log"
 	"math/rand"
 	"time"
 

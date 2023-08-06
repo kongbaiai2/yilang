@@ -2,13 +2,14 @@ package cmcc_api
 
 import (
 	"fmt"
-	"log"
+
 	"net/http"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/gin-gonic/gin"
 	"github.com/robfig/cron"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
 
@@ -48,6 +49,7 @@ func setCron() {
 		c.AddJob(ctx.GetData.CranTimeOneHour, cronjobhour)
 
 		CmccDomainAdd(ctx.Tenant.Domain, "cmcc", "zhuhaiyidong")
+		cronjob.Run()
 
 	}
 
@@ -99,7 +101,7 @@ func runGin() {
 		})
 	})
 	r.GET("/hello", Hello)
-	r.Run(":7000")
+	r.Run(":" + cfg.ListenPort)
 }
 
 // func Runmain() {
@@ -166,6 +168,8 @@ func GetConfig(cfg *Config, cfgname, suffix string, dirArr ...string) {
 }
 
 type Config struct {
+	ListenPort string       `mapstructure:"listen_port"`
+	LogLevel   uint32       `mapstructure:"log_level"`
 	DbCfg      string       `mapstructure:"db_config"`
 	Licence    string       `mapstructure:"licence"`
 	CustomList []TenantItem `mapstructure:"custom_list"`
@@ -209,8 +213,10 @@ type chartCfg struct {
 var cfg Config
 var key []byte
 var mapAlertCfg map[string]alertCfg
+var log *logrus.Logger
 
 func NewRun(keysyn []byte) {
+	log = logrus.New()
 	key = keysyn
 	t := time.Now()
 	defer func() {
@@ -221,7 +227,7 @@ func NewRun(keysyn []byte) {
 	// log.Printf("%#v", cfg)
 
 	// init log
-	initDbAndLog()
+	initDbAndLog("cmcc_alarm.log")
 
 	// 定时执行任务
 	setCron()
