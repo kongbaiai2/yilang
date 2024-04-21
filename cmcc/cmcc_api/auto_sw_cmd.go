@@ -12,27 +12,22 @@ import (
 )
 
 func Auto_sw_cmds(c *gin.Context) {
-	undo := c.DefaultQuery("undo", "false")
+	action := c.DefaultQuery("action", "false")
 	uuidstr := c.DefaultQuery("uuid", "glb_uuid")
 	if uuidstr != glb_uuid {
 		c.String(http.StatusUnauthorized, "Status Unauthorized")
 		return
 	}
-	if undo == "true" {
-		if err := Auto_cfg(true); err != nil {
-			c.String(http.StatusNotModified, "failed: %s", err)
-			return
-		}
-	} else if undo == "false" {
-		if err := Auto_cfg(false); err != nil {
-			c.String(http.StatusNotModified, "failed: %s", err)
-			return
-		}
+
+	if err := Auto_cfg(action); err != nil {
+		c.String(http.StatusNotModified, "failed: %s", err)
+		return
 	}
+
 	GenerateUuid()
 	c.String(200, "success %s", "auto limit")
 }
-func Auto_cfg(isUndoCmd bool) error {
+func Auto_cfg(action string) error {
 	// log.SetLevel(logs.WarnLevel)
 
 	// 获取配置命令，执行的条件，description = auto*,交换机ip。
@@ -71,12 +66,12 @@ func Auto_cfg(isUndoCmd bool) error {
 				resultArr := strings.Fields(results)
 
 				interArr = append(interArr, "interface XGigabitEthernet"+strings.Split(resultArr[0], "XGE")[1])
-				if isUndoCmd {
+				if action == "delete" {
 					interArr = append(interArr, swconf.UndoCmd)
 				} else {
-					interArr = append(interArr, swconf.Cmd)
+					cmd := CmdQosInbound(action)
+					interArr = append(interArr, cmd)
 				}
-
 			}
 
 			log.Infof("cmds: [%s]", interArr)
@@ -97,11 +92,36 @@ func Auto_cfg(isUndoCmd bool) error {
 	return nil
 }
 
+func CmdQosInbound(limit string) string {
+	switch limit {
+	case "2":
+		return "qos lr inbound cir 2000000"
+	case "3":
+		return "qos lr inbound cir 3000000"
+	case "4":
+		return "qos lr inbound cir 4000000"
+	case "5":
+		return "qos lr inbound cir 5000000"
+	case "6":
+		return "qos lr inbound cir 6000000"
+	case "7":
+		return "qos lr inbound cir 7000000"
+	case "8":
+		return "qos lr inbound cir 8000000"
+	case "9":
+		return "qos lr inbound cir 9000000"
+	}
+	return "qos lr inbound cir 1000000"
+}
 func GenerateUuid() {
 	glb_uuid = uuid.NewV4().String()
 
-	url := "http://zabbix.yipeng888.com:7001/auto?uuid=" + glb_uuid + "&undo=false"
-	url += "\n\nhttp://zabbix.yipeng888.com:7001/auto?uuid=" + glb_uuid + "&undo=true"
+	url := "\r<br>\n限速1G: \r<br>\nhttp://zabbix.yipeng888.com:7001/auto?uuid=" + glb_uuid + "&action=1"
+	url += "\r<br>\n限速2G: \r<br>\nhttp://zabbix.yipeng888.com:7001/auto?uuid=" + glb_uuid + "&action=2"
+	url += "\r<br>\n限速3G: \r<br>\nhttp://zabbix.yipeng888.com:7001/auto?uuid=" + glb_uuid + "&action=3"
+	url += "\r<br>\n限速4G: \r<br>\nhttp://zabbix.yipeng888.com:7001/auto?uuid=" + glb_uuid + "&action=4"
+	url += "\r<br>\n限速6G: \r<br>\nhttp://zabbix.yipeng888.com:7001/auto?uuid=" + glb_uuid + "&action=6"
+	url += "\r<br>\n取消限速: \r<br>\nhttp://zabbix.yipeng888.com:7001/auto?uuid=" + glb_uuid + "&action=delete"
 	log.Warn(url)
 	warnerChan <- NewAlarmDb("uuid", "uuid", "yunchen.guangdongyunchen.com", url, "mail", 1)
 }
