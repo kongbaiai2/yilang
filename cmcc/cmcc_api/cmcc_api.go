@@ -144,11 +144,11 @@ func (c *Cmcc) GetStatisticCDN(detailed string, getArgs StatisticArgs, result *[
 	if httpRsp.StatusCode != 200 {
 		log.Printf("do http fail, url: %s, sign: %s, ", url, sign)
 	}
-	// log.Println(httpRsp)
 	body, err := ioutil.ReadAll(httpRsp.Body)
 	if err != nil {
 		return err
 	}
+	log.Debug(string(body))
 	if err := json.Unmarshal(body, result); err != nil {
 		log.Println(string(body))
 		return err

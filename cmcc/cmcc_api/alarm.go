@@ -122,6 +122,9 @@ func (a *AlarmOldNew) insertAlarmToDB() error {
 	}
 
 	log.Printf("Alarm triggered for the hit: %d, host:%v,ticket:%v,plugs:%v,body:%v", hit, host, ticket, usePlugs, body)
+	if len(body) >= 512 {
+		return nil
+	}
 	err := AlarmTableReplace(1, hit, host, body, ticket, domain, usePlugs)
 	if err != nil {
 		log.Println(err)

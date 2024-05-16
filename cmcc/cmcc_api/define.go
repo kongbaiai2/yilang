@@ -112,7 +112,7 @@ type AlarmTable struct {
 
 	Status   int    `json:"status" gorm:"type:int(8) COMMENT '0:ok,1:problem,2:delete'"`
 	Hit      int    `json:"hit" gorm:"type:int(8) COMMENT '触发后一小时命中次数'"`
-	Body     string `json:"body" gorm:"type:varchar(256)"`
+	Body     string `json:"body" gorm:"type:varchar(512)"`
 	UsePlugs string `json:"use_plugs" gorm:"type:varchar(10) COMMENT 'mail,dingtalk,wachat'"`
 }
 
