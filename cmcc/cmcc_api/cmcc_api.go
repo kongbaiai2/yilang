@@ -148,7 +148,9 @@ func (c *Cmcc) GetStatisticCDN(detailed string, getArgs StatisticArgs, result *[
 	if err != nil {
 		return err
 	}
-	log.Debug(string(body))
+	log.Debugf("httpReq: %+v", httpReq)
+	log.Debugf("httpRsp: %+v", httpRsp)
+	log.Debugf("body: %+v", string(body))
 	if err := json.Unmarshal(body, result); err != nil {
 		log.Println(string(body))
 		return err
