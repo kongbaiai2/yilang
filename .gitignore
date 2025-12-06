@@ -1,7 +1,8 @@
-pkg/
+
 mod/
 go.mod
 go.sum
 github.com/
 golang.org/
 *.exe
+src/goapp/_output/

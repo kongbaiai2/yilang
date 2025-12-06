@@ -1,0 +1,8 @@
+
+code.language=go
+
+build.tools.go=1.17.13
+
+build.output=./_output/*
+
+build.command=./goapp.sh

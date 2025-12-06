@@ -1,0 +1,154 @@
+package cacti
+
+import (
+	"fmt"
+	"log"
+	"math"
+	"net/http"
+	"os"
+	"path/filepath"
+	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/kongbaiai2/yilang/goapp/internal/callothers/cacti_proxy"
+	"github.com/kongbaiai2/yilang/goapp/internal/global"
+)
+
+var chinaLoc *time.Location
+
+func init() {
+	var err error
+	chinaLoc, err = time.LoadLocation("Asia/Shanghai")
+	if err != nil {
+		log.Fatal("Failed to load Asia/Shanghai timezone:", err)
+	}
+	os.MkdirAll(global.CONFIG.CactiCfg.ImgPath, os.ModePerm)
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+}
+
+type DataValueResult struct {
+	Data  string
+	Value float64
+}
+
+func ProcessMonthly(localGraphID, month_ago int, isDown bool) (string, float64, error) {
+	start, end := getPreviousMonthRange(month_ago)
+	monthStr := time.Unix(start, 0).In(chinaLoc).Format("200601")
+
+	filenamePrefix := fmt.Sprintf("month_%d_%s", localGraphID, monthStr)
+	c := global.Cacti
+	graph := cacti_proxy.Graph{}
+	graph.Set(localGraphID, start, end, filenamePrefix, isDown)
+
+	p95, err := c.Do(&graph)
+	if err != nil {
+		global.LOG.Errorf("Error processing monthly data: %v", err)
+		return monthStr, 0, err
+	}
+
+	return monthStr, math.Round(p95/1000000*100) / 100, nil
+}
+
+func ProcessDaily(localGraphID, month_ago int, isDown bool) (day_str []DataValueResult, err error) {
+	// 获取上个月第一天和最后一天
+	now := time.Now().In(chinaLoc)
+	// ago := MonthAgo(now, month_ago)
+	firstOfThisMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, chinaLoc)
+	firstOfLastMonth := firstOfThisMonth.AddDate(0, -month_ago, 0)
+
+	year := firstOfLastMonth.Year()
+	month := firstOfLastMonth.Month()
+
+	days := getAllDaysInMonth(year, month)
+	c := global.Cacti
+	graph := cacti_proxy.Graph{}
+
+	// var err error
+	// day_str := []string{}
+	for _, day := range days {
+		filenamePrefix := fmt.Sprintf("everyday_%d_%s", localGraphID, day.Format("20060102"))
+
+		start := day.Unix()
+		end := day.Add(24*time.Hour - time.Second).Unix()
+
+		graph.Set(localGraphID, start, end, filenamePrefix, isDown)
+		p95, tmp_err := c.Do(&graph)
+		if tmp_err != nil {
+			err = tmp_err
+		}
+		// day_str = append(day_str, fmt.Sprintf("%s: %.2f 95th", day.Format("20060102"), p95/1000000))
+		every_day := DataValueResult{
+			Data:  day.Format("20060102"),
+			Value: math.Round(p95/1000000*100) / 100,
+		}
+		day_str = append(day_str, every_day)
+		// time.Unix(start, 0).In(chinaLoc).Format("20060102 150405")
+	}
+	if err != nil {
+		global.LOG.Errorf("Error processing daily data: %v", err)
+		return
+	}
+	// global.LOG.Errorf("success, day p95: \n%v ", strings.Join(day_str, ",\n"))
+	return
+
+}
+
+func MonthAgo(t time.Time, n int) time.Time {
+	return t.AddDate(0, -n, 0)
+}
+
+// getPreviousMonthRange 返回上个月的 start (00:00:00) 和 end (23:59:59) 的 Unix 时间戳（UTC）
+func getPreviousMonthRange(month_ago int) (start, end int64) {
+	now := time.Now().In(chinaLoc) // 当前北京时间
+
+	// ago := MonthAgo(now, month_ago)
+	// 本月 1 号 00:00:00（北京时间）
+	firstOfThisMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, chinaLoc)
+	// 上个月 1 号（北京时间）
+	firstOfLastMonth := firstOfThisMonth.AddDate(0, -month_ago, 0)
+	// 上个月最后一天 23:59:59（北京时间）
+	lastOfLastMonth := firstOfThisMonth.Add(-time.Second)
+
+	return firstOfLastMonth.Unix(), lastOfLastMonth.Unix()
+}
+
+// getAllDaysInMonth 返回某年某月所有日期（按中国时间）
+func getAllDaysInMonth(year int, month time.Month) []time.Time {
+	first := time.Date(year, month, 1, 0, 0, 0, 0, chinaLoc)
+	var days []time.Time
+	for d := first; d.Month() == month; d = d.AddDate(0, 0, 1) {
+		days = append(days, d)
+	}
+	return days
+}
+
+func listImages(c *gin.Context) map[string]interface{} {
+	// 获取ims目录下的所有文件
+	dir := global.CONFIG.CactiCfg.ImgPath
+	files, err := os.ReadDir(dir)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "无法读取目录"})
+		return nil
+	}
+
+	var images []map[string]string
+	for _, file := range files {
+		if !file.IsDir() && (filepath.Ext(file.Name()) == ".png" || filepath.Ext(file.Name()) == ".jpg") {
+			// 构造图片的相对路径
+			imagePath := dir + "/" + file.Name()
+			images = append(images, map[string]string{
+				"name": file.Name(),
+				"url":  imagePath,
+			})
+		}
+	}
+
+	// 返回JSON格式的数据，包括图片列表和一条文本信息
+
+	response := map[string]interface{}{
+		"images": images,
+		"url":    "http://" + global.CONFIG.System.IpAddress + global.CONFIG.System.HttpPort + "/",
+	}
+
+	return response
+}

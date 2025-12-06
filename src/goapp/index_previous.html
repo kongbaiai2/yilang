@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>📊 百分比图表（IMG 静态图）</title>
+  <style>
+    body { font-family: "Segoe UI", sans-serif; padding: 20px; max-width: 1200px; margin: 0 auto; }
+    .control-group { margin: 15px 0; }
+    label { display: inline-block; width: 120px; }
+    input, button { padding: 8px 12px; margin: 4px; }
+    
+    button {
+      background: #007bff; color: white; border: none; border-radius: 4px;
+      cursor: pointer; transition: all 0.2s;
+    }
+    button:hover:not(:disabled) { background: #0056b3; }
+    button.btn-delete {
+      background: #dc3545;
+    }
+    button.btn-delete:hover:not(:disabled) {
+      background: #c82333;
+    }
+
+    .btn-group {
+      display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px;
+    }
+    @media (max-width: 768px) {
+      .btn-group { flex-direction: column; }
+      button { width: 100%; }
+    }
+
+    .img-container {
+      margin: 20px 0; padding: 10px; border: 1px solid #eee; border-radius: 4px;
+    }
+    .img-container img {
+      max-width: 100%; height: auto; display: block; margin: 10px auto;
+    }
+    .loading {
+      color: #666; font-style: italic;
+    }
+    .message {
+      font-size: 1.2em; padding: 10px; background: #f8f9fa; border-left: 4px solid #007bff;
+      margin-bottom: 10px; border-radius: 4px;
+    }
+    pre {
+      background: #f1f1f1;
+      padding: 15px;
+      border-radius: 4px;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      font-family: 'Courier New', monospace;
+      margin-top: 10px;
+      border: 1px solid #ddd;
+    }
+    .image-item {
+      margin: 12px 0;
+    }
+    .image-item img {
+      border-radius: 4px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .copy-button {
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>📈 百分比趋势图（IMG 静态图）</h1>
+
+  <div class="control-group">
+    <label>GraphID:</label>
+    <input type="number" id="graphID" value="985" min="1" />
+    <br>
+    <label>Percent (%):</label>
+    <input type="text" id="percent" value="95" />
+    <br>
+    <label>MonthAgo:</label>
+    <input type="number" id="monthAgo" value="1" min="1" />
+    <br>
+    <label>是否生成图片?</label>
+    <input type="checkbox" id="isDown" />
+    <br><br>
+
+    <!-- 使用 btn-group 包裹所有按钮 -->
+    <div class="btn-group">
+      <button id="btnEveryday">📆 获取每日数据</button>
+      <button id="btnMonthly">📅 获取月度数据</button>
+      <button id="btnDescribeImage">🖼️ 展示图片</button>
+      <button id="btnDeleteDir" class="btn-delete">🗑️ 清空 img 目录</button>
+    </div>
+  </div>
+
+  <!-- 接口返回数据区 -->
+  <div class="img-container">
+    <h3>🔍 接口返回数据：</h3>
+    <div id="message" class="message">请先点击上方按钮</div>
+    <pre id="dataMatrix"></pre>
+    <button class="copy-button" onclick="copyMatrix()">复制矩阵</button>
+  </div>
+
+  <!-- 图片展示区 -->
+  <div class="img-container">
+    <h3>🖼️ 图片展示：</h3>
+    <div id="imgPreview" class="loading">等待加载...</div>
+  </div>
+
+  <script>
+    const messageEl = document.getElementById('message');
+    const previewEl = document.getElementById('imgPreview');
+    const dataMatrixEl = document.getElementById('dataMatrix');
+
+    function showLoading() {
+      messageEl.textContent = "⏳ 正在请求...";
+      messageEl.style.backgroundColor = "#fff3cd";
+      messageEl.style.borderLeftColor = "#ffc107";
+      previewEl.innerHTML = '<div class="loading">🔄 加载中...</div>';
+    }
+
+    function showError(msg) {
+      messageEl.textContent = "❌ " + msg;
+      messageEl.style.backgroundColor = "#f8d7da";
+      messageEl.style.borderLeftColor = "#dc3545";
+      previewEl.innerHTML = '';
+    }
+
+    function showResult(data) {
+      if (data.success && data.data) {
+        // 显示服务器消息
+        messageEl.textContent = data.data.message || '✅ 请求成功';
+        messageEl.style.backgroundColor = "#d1ecf1";
+        messageEl.style.borderLeftColor = "#007bff";
+
+        const images = data.data.images;
+        if (images && Array.isArray(images) && images.length > 0) {
+          let html = '';
+
+          // 提取基础 URL 并去除末尾斜杠
+          const baseImageUrl = (data.data.url || '').replace(/\/+$/, '');
+
+          images.forEach(img => {
+            let finalUrl = img.url;
+
+            // 如果不是完整链接，则拼接 baseImageUrl
+            if (!finalUrl.startsWith('http')) {
+              finalUrl = `${baseImageUrl}/${finalUrl.replace(/^\//, '')}`;
+            }
+
+            html += `
+              <div class="image-item">
+                <img src="${finalUrl}" alt="${img.name}"
+                     onerror="this.outerHTML='<small style=color:red;font-weight:bold;'>⚠️ 图片加载失败：<br/>${finalUrl}</small>'">
+                <br><small><strong>${img.name || '未知图表'}</strong></small>
+              </div>
+            `;
+          });
+
+          previewEl.innerHTML = html;
+        } else {
+          previewEl.innerHTML = '<p>📷 未生成任何图片。</p>';
+        }
+      } else {
+        showError("请求失败：" + (data.message || '未知错误'));
+      }
+    }
+
+    function callAPI(endpoint) {
+      showLoading();
+      const graphID = parseInt(document.getElementById('graphID').value) || 123;
+      const percent = document.getElementById('percent').value || '95';
+      const monthAgo = parseInt(document.getElementById('monthAgo').value) || 1;
+      const isDown = document.getElementById('isDown').checked;
+
+      const url = new URL(`/api/cacti/${endpoint}`, window.location.origin);
+      url.searchParams.set('GraphID', graphID);
+      url.searchParams.set('Percent', percent);
+      url.searchParams.set('MonthAgo', monthAgo);
+      url.searchParams.set('IsDown', isDown);
+
+      fetch(url)
+        .then(res => {
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          return res.json();
+        })
+        .then(data => {
+          // 清空图片区域（避免残留旧图）
+          previewEl.innerHTML = '';
+
+          // 提取 Values 并渲染为表格（仅当存在且为数组）
+          const values = data.data?.Values;
+          if (Array.isArray(values) && values.length > 0) {
+            let matrixText = `Data\tValue\n`;
+            values.forEach(item => {
+              matrixText += `${item.Data}\t${Number(item.Value).toFixed(1)}\n`;
+            });
+
+            dataMatrixEl.textContent = matrixText;
+          } else {
+            dataMatrixEl.textContent = '⚠️ 未获取到有效数值数据（Values 为空或格式异常）';
+          }
+
+          // 更新顶部提示栏
+          messageEl.textContent = data.message || data.data?.message || '✅ 请求成功';
+          messageEl.style.backgroundColor = "#d1ecf1";
+          messageEl.style.borderLeftColor = "#007bff";
+        })
+        .catch(err => {
+          console.error('[API]', err);
+          showError("网络错误：" + (err.message || '请检查服务状态'));
+          dataMatrixEl.textContent = '❌ 请求出错：' + err.message;
+        });
+    }
+
+    function DescribeImage() {
+      showLoading();
+      const graphID = parseInt(document.getElementById('graphID').value) || 123;
+
+      const url = new URL('/api/cacti/DescribeImage', window.location.origin);
+      url.searchParams.set('GraphID', graphID);
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60_000);
+
+      fetch(url, { signal: controller.signal })
+        .then(res => {
+          clearTimeout(timeoutId);
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          return res.json();
+        })
+        .then(showResult)
+        .catch(err => {
+          clearTimeout(timeoutId);
+          if (err.name === 'AbortError') {
+            showError("⏰ 请求超时（60秒），请确认图片已生成或服务正常运行。");
+          } else {
+            console.error('[DescribeImage]', err);
+            showError("请求失败：" + err.message);
+          }
+        });
+    }
+
+    function DeleteDir() {
+      if (!confirm('⚠️ 确认清空 img/ 目录？\n⚠️ 所有文件和子目录将被永久删除！\n\n此操作不可撤销。')) return;
+
+      showLoading();
+      const url = new URL('/api/cacti/DeleteDir', window.location.origin);
+      url.searchParams.set('Dir', 'img');
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30_000); // 30秒超时
+
+      fetch(url, { signal: controller.signal })
+        .then(res => {
+          clearTimeout(timeoutId);
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          return res.json();
+        })
+        .then(data => {
+          if (data.success) {
+            messageEl.textContent = "✅ 已成功清空 img/ 目录";
+            messageEl.style.backgroundColor = "#d1ecf1";
+            messageEl.style.borderLeftColor = "#007bff";
+            previewEl.innerHTML = '<p>🗂️ 目录已清空。</p>';
+          } else {
+            throw new Error(data.message || '清空失败');
+          }
+        })
+        .catch(err => {
+          clearTimeout(timeoutId);
+          if (err.name === 'AbortError') {
+            showError("⏰ 操作超时（30秒）");
+          } else {
+            showError("❌ 删除失败：" + err.message);
+          }
+        });
+    }
+
+    function copyMatrix() {
+      navigator.clipboard.writeText(dataMatrixEl.textContent).then(function() {
+        alert("矩阵数据已复制到剪贴板！");
+      }, function(err) {
+        console.error('Async: Could not copy text: ', err);
+      });
+    }
+
+    document.getElementById('btnEveryday').onclick = () => callAPI('GetPercentEveryDay');
+    document.getElementById('btnMonthly').onclick = () => callAPI('GetPercentMonthly');
+    document.getElementById('btnDescribeImage').onclick = DescribeImage;
+    document.getElementById('btnDeleteDir').onclick = DeleteDir;
+  </script>
+</body>
+</html>

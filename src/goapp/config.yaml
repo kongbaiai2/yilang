@@ -1,0 +1,47 @@
+
+# system configuration
+system:
+  env: daily
+  debug: true
+  auth: true
+  httpPort: ":8002"
+  pprofPort: ":8990"
+  ginMode: "release"  #debug/release
+  ipAddress: "120.232.56.97"
+
+# mysql connect configuration
+mysql:
+  path: 'costombase:OcZGmjktCIN2E-6K@tcp(costombase.mysql.com:3124)/costombase?charset=utf8&parseTime=true&loc=Local'
+  maxIdleConns: 10
+  maxOpenConns: 100
+  logMode: false
+  logZap: ""
+
+
+# redis configuration
+redis:
+  db: 1
+  addr: '127.0.0.1:6379'
+  password: ''
+
+# zap logger configuration
+zap:
+  level: 'info' # debug/info/warn/error/dpanic/panic/fatal
+  path: './logs/goapp.log'
+  pathdb: './logs/db_goapp.log'
+  format: 'console' # console/json
+  prefix: '' # prefix of line log
+  encodeLevel: 'LowercaseLevelEncoder'
+
+# lumberjack logrotate 配置
+logrotate:
+  maxSize: 50
+  maxBackups: 2
+  maxAges: 3
+  compress: false
+
+cactiCfg:
+  baseURL: 'https://zabbix.yipeng888.com'
+  username: 'admin'
+  password: 'password'
+  imgPath: 'img'

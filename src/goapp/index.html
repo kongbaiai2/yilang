@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>📊 百分比图表（IMG 静态图）</title>
+  <style>
+    body { font-family: "Segoe UI", sans-serif; padding: 20px; max-width: 1200px; margin: 0 auto; }
+    .control-group { margin: 15px 0; }
+    label { display: inline-block; width: 120px; }
+    input, button { padding: 8px 12px; margin: 4px; }
+    
+    button {
+      background: #007bff; color: white; border: none; border-radius: 4px;
+      cursor: pointer; transition: all 0.2s;
+    }
+    button:hover:not(:disabled) { background: #0056b3; }
+    button.btn-delete {
+      background: #dc3545;
+    }
+    button.btn-delete:hover:not(:disabled) {
+      background: #c82333;
+    }
+
+    .btn-group {
+      display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px;
+    }
+    @media (max-width: 768px) {
+      .btn-group { flex-direction: column; }
+      button { width: 100%; }
+    }
+
+    .img-container {
+      margin: 20px 0; padding: 10px; border: 1px solid #eee; border-radius: 4px;
+    }
+    .img-container img {
+      max-width: 100%; height: auto; display: block; margin: 10px auto;
+    }
+    .loading {
+      color: #666; font-style: italic;
+    }
+    .message {
+      font-size: 1.2em; padding: 10px; background: #f8f9fa; border-left: 4px solid #007bff;
+      margin-bottom: 10px; border-radius: 4px;
+    }
+    pre {
+      background: #f1f1f1;
+      padding: 15px;
+      border-radius: 4px;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      font-family: 'Courier New', monospace;
+      margin-top: 10px;
+      border: 1px solid #ddd;
+    }
+    .image-item {
+      margin: 12px 0;
+    }
+    .image-item img {
+      border-radius: 4px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .copy-button {
+      margin-top: 10px;
+      padding: 8px 16px;
+      font-weight: bold;
+      background: #28a745;
+      border-color: #218838;
+    }
+    .copy-button:hover:not(:disabled) {
+      background: #218838;
+    }
+  </style>
+</head>
+<body>
+  <h1>📈 百分比趋势图 </h1> tx: 889<p>youyuan: 1166<p>xiantong: 1091<p></p>
+ 
+
+  <div class="control-group">
+    <label>GraphID:</label>
+    <input type="number" id="graphID" value="889" min="1" />
+    <br>
+    <label>Percent (%):</label>
+    <input type="text" id="percent" value="95" />
+    <br>
+    <label>MonthAgo:</label>
+    <input type="number" id="monthAgo" value="1" min="1" />
+    <br>
+    <label>是否生成图片?</label>
+    <input type="checkbox" id="isDown" />
+    <br><br>
+
+    <!-- 使用 btn-group 包裹所有按钮 -->
+    <div class="btn-group">
+      <button id="btnEveryday">📆 获取每日数据</button>
+      <button id="btnMonthly">📅 获取月度数据</button>
+      <button id="btnDescribeImage">🖼️ 展示图片</button>
+      <button id="btnDeleteDir" class="btn-delete">🗑️ 清空 img 目录</button>
+    </div>
+  </div>
+
+  <!-- 接口返回数据区 -->
+  <div class="img-container">
+    <h3>🔍 接口返回数据：</h3>
+    <div id="message" class="message">请先点击上方按钮</div>
+    <pre id="dataMatrix">👉 点击 [获取每日/月度数据] 查看二维矩阵（Data\tValue）</pre>
+    <button class="copy-button" onclick="copyMatrix()">📋 复制矩阵（Ctrl+C）</button>
+  </div>
+
+  <!-- 图片展示区 -->
+  <div class="img-container">
+    <h3>🖼️ 图片展示：</h3>
+    <div id="imgPreview" class="loading">等待加载...</div>
+  </div>
+
+  <script>
+    const messageEl = document.getElementById('message');
+    const previewEl = document.getElementById('imgPreview');
+    const dataMatrixEl = document.getElementById('dataMatrix');
+
+    function showLoading() {
+      messageEl.textContent = "⏳ 正在请求...";
+      messageEl.style.backgroundColor = "#fff3cd";
+      messageEl.style.borderLeftColor = "#ffc107";
+      previewEl.innerHTML = '<div class="loading">🔄 加载中...</div>';
+    }
+
+    function showError(msg) {
+      messageEl.textContent = "❌ " + msg;
+      messageEl.style.backgroundColor = "#f8d7da";
+      messageEl.style.borderLeftColor = "#dc3545";
+      previewEl.innerHTML = '';
+    }
+
+    function showResult(data) {
+      if (data.success && data.data) {
+        messageEl.textContent = data.data.message || '✅ 请求成功';
+        messageEl.style.backgroundColor = "#d1ecf1";
+        messageEl.style.borderLeftColor = "#007bff";
+
+        const images = data.data.images;
+        if (images && Array.isArray(images) && images.length > 0) {
+          let html = '';
+          const baseImageUrl = (data.data.url || '').replace(/\/+$/, '');
+
+          images.forEach(img => {
+            let finalUrl = img.url;
+            if (!finalUrl.startsWith('http')) {
+              finalUrl = `${baseImageUrl}/${finalUrl.replace(/^\//, '')}`;
+            }
+            html += `
+              <div class="image-item">
+                <img src="${finalUrl}" alt="${img.name}"
+                     onerror="this.outerHTML='<small style=color:red;font-weight:bold;'>⚠️ 图片加载失败：<br/>${finalUrl}</small>'">
+                <br><small><strong>${img.name || '未知图表'}</strong></small>
+              </div>
+            `;
+          });
+          previewEl.innerHTML = html;
+        } else {
+          previewEl.innerHTML = '<p>📷 未生成任何图片。</p>';
+        }
+      } else {
+        showError("请求失败：" + (data.message || '未知错误'));
+      }
+    }
+
+    function callAPI(endpoint) {
+      showLoading();
+      const graphID = parseInt(document.getElementById('graphID').value) || 123;
+      const percent = document.getElementById('percent').value || '95';
+      const monthAgo = parseInt(document.getElementById('monthAgo').value) || 1;
+      const isDown = document.getElementById('isDown').checked;
+
+      const url = new URL(`/api/cacti/${endpoint}`, window.location.origin);
+      url.searchParams.set('GraphID', graphID);
+      url.searchParams.set('Percent', percent);
+      url.searchParams.set('MonthAgo', monthAgo);
+      url.searchParams.set('IsDown', isDown);
+
+      fetch(url)
+        .then(res => {
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          return res.json();
+        })
+        .then(data => {
+          previewEl.innerHTML = ''; // 清空图片区
+
+          const values = data.data?.Values;
+          if (Array.isArray(values) && values.length > 0) {
+            let matrix = 'Data\tValue\n';
+            values.forEach(item => {
+              matrix += `${item.Data}\t${Number(item.Value).toFixed(1)}\n`;
+            });
+            dataMatrixEl.textContent = matrix;
+          } else {
+            dataMatrixEl.textContent = '⚠️ 未获取到有效数值数据（Values 为空或格式异常）';
+          }
+
+          messageEl.textContent = data.message || data.data?.message || '✅ 请求成功';
+          messageEl.style.backgroundColor = "#d1ecf1";
+          messageEl.style.borderLeftColor = "#007bff";
+        })
+        .catch(err => {
+          console.error('[API]', err);
+          showError("网络错误：" + (err.message || '请检查服务状态'));
+          dataMatrixEl.textContent = '❌ 请求出错：' + err.message;
+        });
+    }
+
+    function DescribeImage() {
+      showLoading();
+      const graphID = parseInt(document.getElementById('graphID').value) || 123;
+
+      const url = new URL('/api/cacti/DescribeImage', window.location.origin);
+      url.searchParams.set('GraphID', graphID);
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60_000);
+
+      fetch(url, { signal: controller.signal })
+        .then(res => {
+          clearTimeout(timeoutId);
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          return res.json();
+        })
+        .then(showResult)
+        .catch(err => {
+          clearTimeout(timeoutId);
+          if (err.name === 'AbortError') {
+            showError("⏰ 请求超时（60秒），请确认图片已生成或服务正常运行。");
+          } else {
+            console.error('[DescribeImage]', err);
+            showError("请求失败：" + err.message);
+          }
+        });
+    }
+
+    function DeleteDir() {
+      if (!confirm('⚠️ 确认清空 img/ 目录？\n⚠️ 所有文件和子目录将被永久删除！\n\n此操作不可撤销。')) return;
+
+      showLoading();
+      const url = new URL('/api/cacti/DeleteDir', window.location.origin);
+      url.searchParams.set('Dir', 'img');
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30_000);
+
+      fetch(url, { signal: controller.signal })
+        .then(res => {
+          clearTimeout(timeoutId);
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          return res.json();
+        })
+        .then(data => {
+          if (data.success) {
+            messageEl.textContent = "✅ 已成功清空 img/ 目录";
+            messageEl.style.backgroundColor = "#d1ecf1";
+            messageEl.style.borderLeftColor = "#007bff";
+            previewEl.innerHTML = '<p>🗂️ 目录已清空。</p>';
+          } else {
+            throw new Error(data.message || '清空失败');
+          }
+        })
+        .catch(err => {
+          clearTimeout(timeoutId);
+          if (err.name === 'AbortError') {
+            showError("⏰ 操作超时（30秒）");
+          } else {
+            showError("❌ 删除失败：" + err.message);
+          }
+        });
+    }
+
+    // ✅ ✅ ✅ 复制函数（强兼容、高成功率）✅ ✅ ✅
+
+  // ✅ 替换原有的 copyMatrix 函数为以下版本（专为 HTTP 环境优化）
+  function copyMatrix() {
+    const text = document.getElementById('dataMatrix').textContent;
+    if (!text || text.trim() === '') {
+      alert('⚠️ 当前没有数据可以复制，请先点击【获取每日/月度数据】');
+      return;
+    }
+
+    // 创建临时 textarea
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0'; // 不可见但可聚焦
+    textarea.style.pointerEvents = 'none'; // 不影响交互
+    document.body.appendChild(textarea);
+
+    try {
+      textarea.select(); // 选中内容
+      const result = document.execCommand('copy'); // 执行复制命令
+
+      document.body.removeChild(textarea); // 清理
+
+      if (result) {
+        // ✅ 成功复制
+        alert('✅ 已复制到剪贴板！\n\n现在你可以粘贴到 Excel / 记事本等地方。\n\n📌 提示：Excel 中会自动按列分开（Tab分隔）');
+      } else {
+        // ❌ 失败 —— 引导用户手动复制
+        manualCopyFallback(text);
+      }
+    } catch (err) {
+      document.body.removeChild(textarea);
+      console.error('复制失败:', err);
+      manualCopyFallback(text);
+    }
+  }
+
+  // ✅ 手动复制兜底方案
+  function manualCopyFallback(text) {
+    const msg = `❌ 自动复制失败（可能因浏览器限制）。\n\n👉 请手动操作：\n1. 按 Ctrl+A 全选下方内容\n2. 按 Ctrl+C 复制\n3. 到 Excel / 文本编辑器中粘贴\n\n--- 数据预览 ---\n${text.substring(0, 200)}...`;
+    prompt(msg, text); // 使用 prompt 显示全部内容并允许复制
+  }
+
+
+    function fallbackCopy(text) {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed'; // 防止滚动
+      textarea.style.left = '-9999px';
+      textarea.style.top = '-9999px';
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+
+      try {
+        const successful = document.execCommand('copy');
+        document.body.removeChild(textarea);
+        if (successful) {
+          alert('✅ 矩阵数据已成功复制（兼容模式）！');
+        } else {
+          throw new Error('execCommand failed');
+        }
+      } catch (err) {
+        console.error('Fallback copy failed:', err);
+        alert('❌ 复制失败：请手动全选上方内容（Ctrl+A → Ctrl+C）');
+      }
+    }
+
+    // 🔗 绑定事件
+    document.getElementById('btnEveryday').onclick = () => callAPI('GetPercentEveryDay');
+    document.getElementById('btnMonthly').onclick = () => callAPI('GetPercentMonthly');
+    document.getElementById('btnDescribeImage').onclick = DescribeImage;
+    document.getElementById('btnDeleteDir').onclick = DeleteDir;
+  </script>
+</body>
+</html>
