@@ -4,12 +4,9 @@ import (
 	"fmt"
 	"log"
 	"math"
-	"net/http"
 	"os"
-	"path/filepath"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/kongbaiai2/yilang/goapp/internal/callothers/cacti_proxy"
 	"github.com/kongbaiai2/yilang/goapp/internal/global"
 )
@@ -120,35 +117,4 @@ func getAllDaysInMonth(year int, month time.Month) []time.Time {
 		days = append(days, d)
 	}
 	return days
-}
-
-func listImages(c *gin.Context) map[string]interface{} {
-	// 获取ims目录下的所有文件
-	dir := global.CONFIG.CactiCfg.ImgPath
-	files, err := os.ReadDir(dir)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "无法读取目录"})
-		return nil
-	}
-
-	var images []map[string]string
-	for _, file := range files {
-		if !file.IsDir() && (filepath.Ext(file.Name()) == ".png" || filepath.Ext(file.Name()) == ".jpg") {
-			// 构造图片的相对路径
-			imagePath := dir + "/" + file.Name()
-			images = append(images, map[string]string{
-				"name": file.Name(),
-				"url":  imagePath,
-			})
-		}
-	}
-
-	// 返回JSON格式的数据，包括图片列表和一条文本信息
-
-	response := map[string]interface{}{
-		"images": images,
-		"url":    "http://" + global.CONFIG.System.IpAddress + global.CONFIG.System.HttpPort + "/",
-	}
-
-	return response
 }

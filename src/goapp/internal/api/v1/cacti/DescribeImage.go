@@ -1,7 +1,6 @@
 package cacti
 
 import (
-	"net/http"
 	"os"
 	"path/filepath"
 
@@ -29,63 +28,37 @@ type DescribeImageResponse struct {
 	GetPercentEveryDayResponse
 }
 
-// func DescribeImageWork(opt *DescribeImageRequest) (e *errcode.Err, ret *GetPercentEveryDayResponse) {
+func DescribeImageWork() (e *errcode.Err, ret interface{}) {
+	dir := global.CONFIG.CactiCfg.ImgPath
+	files, err := os.ReadDir(dir)
+	if err != nil {
+		return &errcode.Err{Msg: err.Error()}, nil
+	}
 
-// 	monthStr, data, err := ProcessMonthly(opt.GraphID, opt.MonthAgo, opt.IsDown)
-// 	if err != nil {
-// 		return &errcode.Err{Msg: err.Error()}, nil
-// 	}
-// 	e = errcode.StatusSuccess
-// 	ret = &GetPercentEveryDayResponse{
-// 		values: []DataValueResult{
-// 			{
-// 				Data:  monthStr,
-// 				Value: data / 1000000,
-// 			},
-// 		},
-// 	}
+	var images []map[string]string
+	for _, file := range files {
+		if !file.IsDir() && (filepath.Ext(file.Name()) == ".png" || filepath.Ext(file.Name()) == ".jpg") {
+			// 构造图片的相对路径
+			imagePath := dir + "/" + file.Name()
+			images = append(images, map[string]string{
+				"name": file.Name(),
+				"url":  imagePath,
+			})
+		}
+	}
 
-// 	global.LOG.Errorf("success, month p95 \n%v: %.2f 95th ", monthStr, data/1000000)
+	// 返回JSON格式的数据，包括图片列表和一条文本信息
 
-// 	return
-// }
+	ret = map[string]interface{}{
+		"images": images,
+		"url":    "http://" + global.CONFIG.System.IpAddress + global.CONFIG.System.HttpPort + "/",
+	}
+	return
+}
 
 func DescribeImage(c *gin.Context) {
 	ginplus.ResponseWrapper(c, func(c *gin.Context) (e *errcode.Err, ret interface{}) {
-		// opt := DescribeImageRequest{}
-		// if err := ginplus.BindParams(c, &opt); err != nil {
-		// 	global.LOG.Errorf("[ERROR] DescribeImage check parameters failed, err:%v", err)
-		// 	if errors.Is(err, errcode.ErrorCidrFormat) {
-		// 		return errcode.ErrorCidrFormat, nil
-		// 	}
-		// 	return errcode.ErrorParameters, nil
-		// }
-
-		dir := global.CONFIG.CactiCfg.ImgPath
-		files, err := os.ReadDir(dir)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "无法读取目录"})
-			return
-		}
-
-		var images []map[string]string
-		for _, file := range files {
-			if !file.IsDir() && (filepath.Ext(file.Name()) == ".png" || filepath.Ext(file.Name()) == ".jpg") {
-				// 构造图片的相对路径
-				imagePath := dir + "/" + file.Name()
-				images = append(images, map[string]string{
-					"name": file.Name(),
-					"url":  imagePath,
-				})
-			}
-		}
-
-		// 返回JSON格式的数据，包括图片列表和一条文本信息
-
-		ret = map[string]interface{}{
-			"images": images,
-			"url":    "http://" + global.CONFIG.System.IpAddress + global.CONFIG.System.HttpPort + "/",
-		}
+		e, ret = DescribeImageWork()
 		return
 	})
 }

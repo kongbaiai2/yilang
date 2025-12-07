@@ -6,3 +6,5 @@ github.com/
 golang.org/
 *.exe
 src/goapp/_output/
+src/goapp/logs/
+src/goapp/config.yaml

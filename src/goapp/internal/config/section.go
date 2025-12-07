@@ -53,3 +53,22 @@ type CactiCfg struct {
 	Password string `yaml:"password"`
 	ImgPath  string `yaml:"imgPath"`
 }
+
+type Mail struct {
+	Smtp   Smtp   `yaml:"smtp"`
+	Header Header `yaml:"header"`
+}
+type Smtp struct {
+	Host     string `yaml:"host"`
+	Port     int    `yaml:"port"`
+	Username string `yaml:"username"`
+	Password string `yaml:"password"`
+}
+
+type Header struct {
+	From       string   `yaml:"from"`
+	To         []string `yaml:"to"`
+	Subject    string   `yaml:"subject"`
+	Body       string   `yaml:"body"`
+	Attachment []string `yaml:"attachment"`
+}

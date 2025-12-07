@@ -12,6 +12,7 @@ import (
 	"github.com/kongbaiai2/yilang/goapp/internal/callothers/cacti_proxy"
 	"github.com/kongbaiai2/yilang/goapp/internal/global"
 	"github.com/kongbaiai2/yilang/goapp/internal/routers"
+	"github.com/kongbaiai2/yilang/goapp/internal/task"
 	"github.com/kongbaiai2/yilang/goapp/pkg/middleware"
 
 	"github.com/gin-gonic/gin"
@@ -87,7 +88,13 @@ func initDefaultParameters() {
 }
 
 func execTask() {
-	// cacti_proxy.FetchOption()
+	// 0 0 0 3 1 *
+	// task.SendMail()
+	// task.GenDataAndGraph()
+
+	task.AddFunc(global.CONFIG.Crantab, task.GenDataAndGraph)
+	task.Start()
+
 }
 
 func main() {

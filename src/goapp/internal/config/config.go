@@ -7,6 +7,8 @@ type Server struct {
 	Zap       Zap       `yaml:"zap"`
 	LogRotate Logrotate `yaml:"logrotate"`
 	CactiCfg  CactiCfg  `yaml:"cactiCfg"`
+	Crantab   string    `yaml:"crantab"`
+	Mail      Mail      `yaml:"mail"`
 }
 
 type TaskFinishInfo struct {
