@@ -132,12 +132,9 @@ func GenDataAndGraph() {
 	opt := cacti.DeleteDirRequest{
 		Dir: Cvs_dir,
 	}
-
-	err, _ = cacti.DeleteDirWork(&opt)
-	if err != errcode.StatusSuccess {
-		global.LOG.Errorln(err)
-		return
-	}
+	cacti.DeleteDirWork(&opt)
+	opt.Dir = global.CONFIG.CactiCfg.ImgPath
+	cacti.DeleteDirWork(&opt)
 
 }
 
