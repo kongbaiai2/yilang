@@ -1,6 +1,5 @@
 
 mod/
-go.mod
 go.sum
 github.com/
 golang.org/
@@ -8,3 +7,5 @@ golang.org/
 src/goapp/_output/
 src/goapp/logs/
 src/goapp/config.yaml
+src/goapp/img/
+src/goapp/cvs/
