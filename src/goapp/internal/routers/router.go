@@ -38,14 +38,6 @@ func NewRouter() *gin.Engine {
 	/*************************************************************************/
 	apiGroup := g.Group("/api")
 
-	// // cidr depended
-	// resApi := apiGroup.Group("/cidr")
-	// {
-	// 	resApi.GET("/ListCidrs", cidr.ListCidrs)
-	// 	// resApi.GET("/CreateCidr", cidr.CreateCidr)
-	// 	resApi.GET("/DeleteCidr", cidr.DeleteCidr)
-	// }
-
 	resApi := apiGroup.Group("/cacti")
 	{
 		resApi.GET("/GetPercentMonthly", cacti.GetPercentMonthly)

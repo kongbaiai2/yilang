@@ -1,6 +1,7 @@
 package cacti
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"math"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/kongbaiai2/yilang/goapp/internal/callothers/cacti_proxy"
 	"github.com/kongbaiai2/yilang/goapp/internal/global"
+	"github.com/kongbaiai2/yilang/goapp/pkg/runner"
 )
 
 var chinaLoc *time.Location
@@ -58,36 +60,61 @@ func ProcessDaily(localGraphID, month_ago int, isDown bool) (day_str []DataValue
 
 	days := getAllDaysInMonth(year, month)
 	c := global.Cacti
-	graph := cacti_proxy.Graph{}
 
 	// var err error
 	// day_str := []string{}
+	tasks := []runner.TaskItem{}
 	for _, day := range days {
+		graph := cacti_proxy.Graph{}
+
 		filenamePrefix := fmt.Sprintf("everyday_%d_%s", localGraphID, day.Format("20060102"))
 
 		start := day.Unix()
 		end := day.Add(24*time.Hour - time.Second).Unix()
 
 		graph.Set(localGraphID, start, end, filenamePrefix, isDown)
-		p95, tmp_err := c.Do(&graph)
-		if tmp_err != nil {
-			err = tmp_err
-		}
+		tasks = append(tasks, runner.NewTaskItem("api-call", &runner.ContextualVoidTask{
+			Fn: func(ctx context.Context) error {
+				p95, tmp_err := c.Do(&graph)
+				if tmp_err != nil {
+					global.LOG.Errorln(tmp_err)
+					return tmp_err
+				}
+				every_day := DataValueResult{
+					Data:  day.Format("20060102"),
+					Value: math.Round(p95/1000000*100) / 100,
+				}
+				day_str = append(day_str, every_day)
+				return nil
+			},
+		}, runner.TaskPolicy{
+			MaxRetry:    1,
+			TaskTimeout: 30 * time.Second,
+		}))
+
 		// day_str = append(day_str, fmt.Sprintf("%s: %.2f 95th", day.Format("20060102"), p95/1000000))
-		every_day := DataValueResult{
-			Data:  day.Format("20060102"),
-			Value: math.Round(p95/1000000*100) / 100,
-		}
-		day_str = append(day_str, every_day)
+
 		// time.Unix(start, 0).In(chinaLoc).Format("20060102 150405")
 	}
-	if err != nil {
-		global.LOG.Errorf("Error processing daily data: %v", err)
-		return
+	TaskResults := ProcessDailyTask(tasks)
+	for _, taskResult := range TaskResults {
+		if taskResult.Err != nil {
+			global.LOG.Warnf("%+v", taskResult)
+		}
 	}
+	global.LOG.Info(day_str)
+
+	// if err != nil {
+	// 	global.LOG.Errorf("Error processing daily data: %v", err)
+	// 	return
+	// }
 	// global.LOG.Errorf("success, day p95: \n%v ", strings.Join(day_str, ",\n"))
 	return
 
+}
+
+func ProcessDailyTask(tasks []runner.TaskItem) []runner.TaskResult {
+	return runner.DefaultRunConcurrency(tasks)
 }
 
 func MonthAgo(t time.Time, n int) time.Time {

@@ -35,9 +35,10 @@ func GetPercentEveryDayWork(opt *GetPercentEveryDayRequest) (e *errcode.Err, ret
 	}
 	e = errcode.StatusSuccess
 	ret = &GetPercentEveryDayResponse{Values: data}
-	for _, v := range data {
-		global.LOG.Infof("success, day p95: \n%v: %.2f ", v.Data, v.Value)
-	}
+	// for _, v := range data {
+	// 	global.LOG.Infof("success, day p95: \n%v: %.2f ", v.Data, v.Value)
+	// }
+	// global.LOG.Infof("success, day p95: %v ", data)
 
 	return
 }

@@ -83,7 +83,7 @@ func initDefaultParameters() {
 		URL:      global.CONFIG.CactiCfg.BaseURL,
 		Username: global.CONFIG.CactiCfg.Username,
 		Password: global.CONFIG.CactiCfg.Password,
-	})
+	}).CreateHTTPClient().LoginCacti()
 
 }
 
@@ -126,8 +126,8 @@ func main() {
 	s := &http.Server{
 		Addr:           global.CONFIG.System.HttpPort,
 		Handler:        router,
-		ReadTimeout:    20 * time.Second,
-		WriteTimeout:   20 * time.Second,
+		ReadTimeout:    30 * time.Second,
+		WriteTimeout:   30 * time.Second,
 		MaxHeaderBytes: 1 << 20,
 	}
 
