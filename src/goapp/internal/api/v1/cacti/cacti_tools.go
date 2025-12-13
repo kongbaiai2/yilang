@@ -35,7 +35,7 @@ func ProcessMonthly(localGraphID, month_ago int, isDown bool) (string, float64, 
 	monthStr := time.Unix(start, 0).In(chinaLoc).Format("200601")
 
 	filenamePrefix := fmt.Sprintf("month_%d_%s", localGraphID, monthStr)
-	c := global.Cacti
+	c := cacti_proxy.Cacti
 	graph := cacti_proxy.Graph{}
 	graph.Set(localGraphID, start, end, filenamePrefix, isDown)
 
@@ -59,7 +59,7 @@ func ProcessDaily(localGraphID, month_ago int, isDown bool) (day_str []DataValue
 	month := firstOfLastMonth.Month()
 
 	days := getAllDaysInMonth(year, month)
-	c := global.Cacti
+	c := cacti_proxy.Cacti
 
 	// var err error
 	// day_str := []string{}

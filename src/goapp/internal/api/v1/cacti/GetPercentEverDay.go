@@ -54,6 +54,7 @@ func GetPercentEveryDay(c *gin.Context) {
 			return errcode.ErrorParameters, nil
 		}
 
+		global.LOG.Infof("%+v", opt)
 		e, ret = GetPercentEveryDayWork(&opt)
 		// ret = listImages(c, ret_tmp)
 		return

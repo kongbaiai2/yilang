@@ -2,9 +2,11 @@ package routers
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/kongbaiai2/yilang/goapp/internal/api/v1/cacti"
 	"github.com/kongbaiai2/yilang/goapp/internal/global"
+	"github.com/kongbaiai2/yilang/goapp/pkg/ginplus"
 
 	"github.com/gin-gonic/gin"
 )
@@ -28,6 +30,16 @@ func NewRouter() *gin.Engine {
 	})
 
 	g.Use(GinLogger(), GinRecovery(true))
+	g.Use(
+		ginplus.RateLimit(ginplus.RateLimitConfig{
+			Requests: 5,
+			Window:   1 * time.Minute,
+		}),
+		ginplus.Cache(ginplus.CacheConfig{
+			MaxAge:      3000,
+			IgnorePaths: []string{"/admin"},
+		}),
+	)
 
 	// if global.CONFIG.System.Auth {
 	// 	g.Use(Auth())

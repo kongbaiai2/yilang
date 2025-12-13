@@ -6,7 +6,6 @@ import (
 	"encoding/csv"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
@@ -17,8 +16,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kongbaiai2/yilang/goapp/internal/global"
 	"gonum.org/v1/gonum/stat"
 )
+
+var Cacti *CactiOptions
 
 type CactiConfig struct {
 	URL      string
@@ -26,9 +28,10 @@ type CactiConfig struct {
 	Password string
 }
 type CactiOptions struct {
-	cfg    CactiConfig
-	client *http.Client
-	graph  *Graph
+	cfg        CactiConfig
+	client     *http.Client
+	graph      *Graph
+	sessionMgr *SessionManager
 }
 type Graph struct {
 	localGraphID   int
@@ -48,13 +51,12 @@ func (g *Graph) Set(localGraphID int, start, end int64, filenamePrefix string, i
 	g.isDownloaded = isDownloaded
 	return g
 }
-func (c_opt *CactiOptions) CreateHTTPClient() *CactiOptions {
-	c_opt.client = createHTTPClient()
-	return c_opt
-}
 
 func (c_opt *CactiOptions) SetConfig(cfg CactiConfig) *CactiOptions {
+	c_opt.client = createHTTPClient()
 	c_opt.cfg = cfg
+	c_opt.sessionMgr = NewSessionManager(cfg.URL, cfg.Username, cfg.Password, c_opt.client)
+
 	return c_opt
 }
 
@@ -66,7 +68,7 @@ func (c_opt *CactiOptions) LoginCacti() error {
 	login_url := c_opt.cfg.URL + "/index.php"
 	token, err := extractCSRFToken(c_opt.client, login_url)
 	if err != nil {
-		log.Printf("Failed to extract CSRF token: %v", err)
+		global.LOG.Errorf("Failed to extract CSRF token: %v", err)
 		return err
 	}
 	return loginCacti(c_opt.client, login_url, c_opt.cfg.Username, c_opt.cfg.Password, token)
@@ -103,7 +105,7 @@ func createHTTPClient() *http.Client {
 func extractCSRFToken(client *http.Client, loginURL string) (string, error) {
 	resp, err := client.Get(loginURL)
 	if err != nil {
-		log.Printf("Failed to fetch login page: " + err.Error())
+		global.LOG.Errorf("Failed to fetch login page: " + err.Error())
 		return "", err
 	}
 	defer resp.Body.Close()
@@ -216,7 +218,7 @@ func (g *Graph) getData(exportBody []byte, data_num int) ([]float64, error) {
 	records, err := reader.ReadAll()
 	if err != nil {
 		// 如果还是失败，打印出问题的片段用于调试
-		log.Printf("Failed to parse cleaned CSV. First 5 lines:\n%s",
+		global.LOG.Errorf("Failed to parse cleaned CSV. First 5 lines:\n%s",
 			strings.Join(csvLines[:min(5, len(csvLines))], "\n"))
 		return nil, fmt.Errorf("Failed to parse CSV after cleaning: " + err.Error())
 	}
@@ -255,14 +257,14 @@ func (g *Graph) getData(exportBody []byte, data_num int) ([]float64, error) {
 }
 
 func (g *Graph) DownloadGraphImage(client *http.Client, filename string) error {
-	// log.Printf("graph: %+v", g)
+	// global.LOG.Errorf("graph: %+v", g)
 	return downloadGraphImage(client, g.downUrl, filename)
 }
 
 // // 计算 95th 百分位
 func calculateP95(values []float64) float64 {
 	if len(values) == 0 {
-		log.Printf("empty values slice")
+		global.LOG.Errorf("empty values slice")
 		return 0.0
 	}
 	sort.Float64s(values)
@@ -337,12 +339,8 @@ func min(a, b int) int {
 // ProcessDaily(cactiURL, username, password, localGraphID)
 
 func (c *CactiOptions) Do(g *Graph) (float64, error) {
-
-	if c.client == nil {
-		if err := c.SetConfig(c.cfg).CreateHTTPClient().LoginCacti(); err != nil {
-			log.Printf("Login failed: %v", err)
-			return 0, err
-		}
+	if err := c.sessionMgr.EnsureLogin(); err != nil {
+		return 0, fmt.Errorf("ensure login failed: %w", err)
 	}
 
 	g.dataUrl = fmt.Sprintf("%s/graph_xport.php?local_graph_id=%d&rra_id=0&view_type=tree&graph_start=%d&graph_end=%d",
@@ -356,26 +354,34 @@ func (c *CactiOptions) Do(g *Graph) (float64, error) {
 			c.cfg.URL, g.localGraphID, g.start, g.end)
 		filename := g.filenamePrefix + ".png"
 
-		// log.Printf("print c_opt: %+v", c)
+		// global.LOG.Errorf("print c_opt: %+v", c)
 
 		err := c.graph.DownloadGraphImage(c.client, filename)
 		if err != nil {
-			log.Printf("Failed to fetch graph data: %v", err)
-			return 0, err
+			global.LOG.Errorf("Failed to fetch graph data: %v", err)
+			// return 0, err
 		}
 	}
 
 	// 获取并处理数据,获取95值
 	allValues, err := c.graph.FetchGraphData(c.client)
 	if err != nil {
-		log.Printf("Failed to fetch graph data: %v", err)
-		return 0, err
+		// ⚠️ 可选：session 可能刚过期？再检一次并重试
+		if !c.sessionMgr.IsAlive() {
+			c.sessionMgr.Invalidate()
+			if retryErr := c.sessionMgr.EnsureLogin(); retryErr == nil {
+				allValues, err = g.FetchGraphData(c.client)
+			}
+		}
+		if err != nil {
+			return 0, fmt.Errorf("fetch data failed: %w", err)
+		}
 	}
 	// // inbound=2 oubound=3
 	// inboundValues, err := c.graph.getData(allValues, 2)
 	// if err != nil {
-	// 	log.Printf("Failed to fetch graph data: %v", err)
-	// 	log.Printf("c.graph: %+v", c.graph)
+	// 	global.LOG.Errorf("Failed to fetch graph data: %v", err)
+	// 	global.LOG.Errorf("c.graph: %+v", c.graph)
 	// 	return 0, err
 	// }
 
@@ -384,7 +390,7 @@ func (c *CactiOptions) Do(g *Graph) (float64, error) {
 	remote_p95, _ := extractCactiP95FromExport(string(allValues))
 
 	// if (p95-remote_p95) > 1000 || (remote_p95-p95) > 1000 {
-	// 	log.Printf("Remote report 95th place - calculation of 95th percentile data with significant difference.remote_p95:%f, p95:%f ", remote_p95, p95)
+	// 	global.LOG.Errorf("Remote report 95th place - calculation of 95th percentile data with significant difference.remote_p95:%f, p95:%f ", remote_p95, p95)
 	// }
 
 	return remote_p95, nil

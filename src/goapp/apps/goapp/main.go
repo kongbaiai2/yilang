@@ -78,12 +78,12 @@ func initDefaultParameters() {
 	// global.REDIS = cache.Redis()
 	// global.SqlDB, _ = global.DB.DB()
 	// global.Cacti = cacti_proxy.NewCactiClient(global.CONFIG.CactiCfg.BaseURL, global.CONFIG.CactiCfg.Username, global.CONFIG.CactiCfg.Password)
-	global.Cacti = &cacti_proxy.CactiOptions{}
-	global.Cacti.SetConfig(cacti_proxy.CactiConfig{
+	cacti_proxy.Cacti = &cacti_proxy.CactiOptions{}
+	cacti_proxy.Cacti.SetConfig(cacti_proxy.CactiConfig{
 		URL:      global.CONFIG.CactiCfg.BaseURL,
 		Username: global.CONFIG.CactiCfg.Username,
 		Password: global.CONFIG.CactiCfg.Password,
-	}).CreateHTTPClient().LoginCacti()
+	}) //.LoginCacti()
 
 }
 
@@ -119,6 +119,7 @@ func main() {
 	// 初始化默认参数
 	initDefaultParameters()
 
+	global.LOG.Infof("go tools is restarting...")
 	execTask()
 
 	gin.SetMode(global.CONFIG.System.GinMode)
@@ -131,7 +132,7 @@ func main() {
 		MaxHeaderBytes: 1 << 20,
 	}
 
-	global.LOG.Infof("go tools is restarting...")
+	global.LOG.Infof("app:%s, goversion:%s, git:%s, time:%s, tag:%s", "goapp", runtime.Version(), buildGitRevision, buildTimestamp, tagGitVersion)
 
 	if err := s.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		fmt.Printf("s.ListenAndServe err: %v", err)

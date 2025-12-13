@@ -58,6 +58,7 @@ func GetPercentMonthly(c *gin.Context) {
 			return errcode.ErrorParameters, nil
 		}
 
+		global.LOG.Infof("%+v", opt)
 		e, ret = GetPercentMonthlyWork(&opt)
 		// ret = listImages(c, ret_tmp)
 		return
