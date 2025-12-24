@@ -60,6 +60,9 @@ func (c_opt *CactiOptions) SetConfig(cfg CactiConfig) *CactiOptions {
 	return c_opt
 }
 
+func (c_opt *CactiOptions) FlushLogin()  {
+	c_opt.sessionMgr.FlushLogin()
+}
 func (c_opt *CactiOptions) GetBaseURL() string {
 	return c_opt.cfg.URL
 }

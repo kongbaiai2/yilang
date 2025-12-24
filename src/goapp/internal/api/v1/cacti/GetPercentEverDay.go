@@ -12,7 +12,7 @@ import (
 
 type GetPercentEveryDayRequest struct {
 	GraphID  int  `json:"GraphID" validate:"required"`
-	MonthAgo int  `json:"MonthAgo" default:"1"`
+	MonthAgo int  `json:"MonthAgo" default:"0"`
 	IsDown   bool `json:"IsDown"`
 }
 

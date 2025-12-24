@@ -41,6 +41,10 @@ func NewSessionManager(baseURL, username, password string, client *http.Client) 
 	}
 }
 
+func (sm *SessionManager) FlushLogin() {
+	sm.isLoggedIn = false
+}
+
 // IsAlive 检查当前 session 是否仍有效（只读，不触发登录）
 // 返回 true 表示已登录且可访问 graph_view.php；false 表示需重登录
 func (sm *SessionManager) IsAlive() bool {
@@ -181,6 +185,11 @@ func (sm *SessionManager) isLoginValid() bool {
 // EnsureLogin 线程安全地确保已登录：若未登录则调用 ForceLogin()
 // 推荐在每次业务请求前调用
 func (sm *SessionManager) EnsureLogin() error {
+	if sm.isLoginValid(){
+		global.LOG.Debug("logined")
+		return nil
+	}
+
 	sm.loginMu.RLock()
 	if sm.isLoggedIn {
 		sm.loginMu.RUnlock()

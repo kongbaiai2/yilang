@@ -124,7 +124,6 @@ func Cache(cfg CacheConfig) gin.HandlerFunc {
 		// 尝试从缓存读取
 		if data, ok, _ := cfg.CacheStore.Get(key); ok {
 			global.LOG.Debugf(">>> CACHE HIT!\n")
-			global.LOG.Debugf(">>> Cached data length: %d\n", len(data))
 			global.LOG.Debugf(">>> Cached data: %s\n", string(data))
 
 			hash := sha256.Sum256(data)
