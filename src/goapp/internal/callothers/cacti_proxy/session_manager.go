@@ -121,6 +121,7 @@ func (sm *SessionManager) doLoginOnce() error {
 	loginData.Set("action", "login")
 	loginData.Set("login_username", sm.username)
 	loginData.Set("login_password", sm.password)
+	loginData.Set("remember", "on")
 
 	req, err := http.NewRequest("POST", loginURL, strings.NewReader(loginData.Encode()))
 	if err != nil {
@@ -179,16 +180,13 @@ func (sm *SessionManager) isLoginValid() bool {
 	defer resp.Body.Close()
 
 	body, _ := io.ReadAll(resp.Body)
+	global.LOG.Debug(string(body))
 	return !(bytes.Contains(body, []byte("登录到Cacti")) || bytes.Contains(body, []byte("<title>登录")))
 }
 
 // EnsureLogin 线程安全地确保已登录：若未登录则调用 ForceLogin()
 // 推荐在每次业务请求前调用
 func (sm *SessionManager) EnsureLogin() error {
-	if sm.isLoginValid(){
-		global.LOG.Debug("logined")
-		return nil
-	}
 
 	sm.loginMu.RLock()
 	if sm.isLoggedIn {
@@ -201,6 +199,12 @@ func (sm *SessionManager) EnsureLogin() error {
 	sm.loginMu.Lock()
 	defer sm.loginMu.Unlock()
 	if sm.isLoggedIn {
+		return nil
+	}
+
+	if sm.isLoginValid() {
+		global.LOG.Debug("logined")
+		sm.isLoggedIn = true
 		return nil
 	}
 

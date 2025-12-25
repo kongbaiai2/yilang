@@ -36,8 +36,8 @@ func NewRouter() *gin.Engine {
 			Window:   1 * time.Minute,
 		}),
 		ginplus.Cache(ginplus.CacheConfig{
-			MaxAge:      3000,
-			IgnorePaths: []string{"/admin"},
+			MaxAge:      300,
+			IgnorePaths: []string{"/admin", "/api/cacti/DescribeImage", "/api/cacti/DeleteDir"},
 		}),
 	)
 
