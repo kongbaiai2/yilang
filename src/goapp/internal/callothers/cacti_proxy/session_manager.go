@@ -180,7 +180,7 @@ func (sm *SessionManager) isLoginValid() bool {
 	defer resp.Body.Close()
 
 	body, _ := io.ReadAll(resp.Body)
-	global.LOG.Debug(string(body))
+	// global.LOG.Debug(string(body))
 	return !(bytes.Contains(body, []byte("登录到Cacti")) || bytes.Contains(body, []byte("<title>登录")))
 }
 

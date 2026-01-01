@@ -35,7 +35,7 @@ func ProcessMonthly(localGraphID, month_ago int, isDown bool) (string, float64, 
 	monthStr := time.Unix(start, 0).In(chinaLoc).Format("200601")
 
 	filenamePrefix := fmt.Sprintf("month_%d_%s", localGraphID, monthStr)
-	cacti_proxy.Cacti.FlushLogin()  // 刷新登录，上次未登出情况下，本次登录不检验了。
+	cacti_proxy.Cacti.FlushLogin() // 刷新登录，上次未登出情况下，本次登录不检验了。
 	c := cacti_proxy.Cacti
 	graph := cacti_proxy.Graph{}
 	graph.Set(localGraphID, start, end, filenamePrefix, isDown)
@@ -58,16 +58,16 @@ func ProcessDaily(localGraphID, month_ago int, isDown bool) (day_str []DataValue
 		lastDay := now.AddDate(0, 0, -1)
 		days = append(days, lastDay)
 		isDown = true
-	}else{	// ago := MonthAgo(now, month_ago)
-	firstOfThisMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, chinaLoc)
-	firstOfLastMonth := firstOfThisMonth.AddDate(0, -month_ago, 0)
+	} else { // ago := MonthAgo(now, month_ago)
+		firstOfThisMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, chinaLoc)
+		firstOfLastMonth := firstOfThisMonth.AddDate(0, -month_ago, 0)
 
-	year := firstOfLastMonth.Year()
-	month := firstOfLastMonth.Month()
+		year := firstOfLastMonth.Year()
+		month := firstOfLastMonth.Month()
 
-	days = getAllDaysInMonth(year, month)
+		days = getAllDaysInMonth(year, month)
 	}
-	
+
 	cacti_proxy.Cacti.FlushLogin()
 	c := cacti_proxy.Cacti
 
