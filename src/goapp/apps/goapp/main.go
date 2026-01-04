@@ -90,7 +90,9 @@ func initDefaultParameters() {
 func execTask() {
 	// 0 0 0 3 1 *
 	// task.SendMail()
-	// task.GenDataAndGraph()
+	if global.CONFIG.Mail.ImmediatelySend {
+		task.GenDataAndGraph()
+	}
 
 	task.AddFunc(global.CONFIG.Crantab, task.GenDataAndGraph)
 	task.Start()
@@ -119,7 +121,7 @@ func main() {
 	// 初始化默认参数
 	initDefaultParameters()
 
-	global.LOG.Infof("go tools is restarting...")
+	global.LOG.Infof("go app is restarting...")
 	execTask()
 
 	gin.SetMode(global.CONFIG.System.GinMode)

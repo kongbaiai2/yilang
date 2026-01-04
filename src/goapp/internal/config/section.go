@@ -57,6 +57,8 @@ type CactiCfg struct {
 type Mail struct {
 	Smtp   Smtp   `yaml:"smtp"`
 	Header Header `yaml:"header"`
+
+	ImmediatelySend bool `yaml:"immediatelySend"`
 }
 type Smtp struct {
 	Host     string `yaml:"host"`
@@ -71,4 +73,10 @@ type Header struct {
 	Subject    string   `yaml:"subject"`
 	Body       string   `yaml:"body"`
 	Attachment []string `yaml:"attachment"`
+}
+
+type GetPercentMonthlyRequest struct {
+	GraphID  int  `yaml:"GraphID"`
+	MonthAgo int  `yaml:"MonthAgo"`
+	IsDown   bool `yaml:"IsDown"`
 }

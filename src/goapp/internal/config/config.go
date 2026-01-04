@@ -9,6 +9,9 @@ type Server struct {
 	CactiCfg  CactiCfg  `yaml:"cactiCfg"`
 	Crantab   string    `yaml:"crantab"`
 	Mail      Mail      `yaml:"mail"`
+
+	MonthlyGraphs []GetPercentMonthlyRequest `yaml:"monthlyGraphs"`
+	DayGraphs     []GetPercentMonthlyRequest `yaml:"dayGraphs"`
 }
 
 type TaskFinishInfo struct {

@@ -96,22 +96,41 @@ func GenDataAndGraph() {
 	// tx: 889
 	// youyuan: 1166
 	// xiantong: 1091
-
-	month_lists := []cacti.GetPercentMonthlyRequest{
-		{GraphID: 889, MonthAgo: 1, IsDown: true},
-		{GraphID: 1166, MonthAgo: 1, IsDown: true},
-		{GraphID: 1091, MonthAgo: 1, IsDown: true},
+	month_temp_list := []cacti.GetPercentMonthlyRequest{}
+	day_temp_list := []cacti.GetPercentMonthlyRequest{}
+	for _, v := range global.CONFIG.MonthlyGraphs {
+		temp := cacti.GetPercentMonthlyRequest{
+			GraphID:  v.GraphID,
+			MonthAgo: v.MonthAgo,
+			IsDown:   v.IsDown,
+		}
+		month_temp_list = append(month_temp_list, temp)
 	}
-	str, err := GenMonthCvs(month_lists)
+
+	for _, v := range global.CONFIG.DayGraphs {
+		temp := cacti.GetPercentMonthlyRequest{
+			GraphID:  v.GraphID,
+			MonthAgo: v.MonthAgo,
+			IsDown:   v.IsDown,
+		}
+		day_temp_list = append(day_temp_list, temp)
+	}
+
+	// month_lists := []cacti.GetPercentMonthlyRequest{
+	// 	{GraphID: 889, MonthAgo: 1, IsDown: true},
+	// 	{GraphID: 1166, MonthAgo: 1, IsDown: true},
+	// 	{GraphID: 1091, MonthAgo: 1, IsDown: true},
+	// }
+	str, err := GenMonthCvs(month_temp_list)
 	if err != nil {
 		global.LOG.Errorln(err)
 		return
 	}
 
-	day_lists := []cacti.GetPercentMonthlyRequest{
-		{GraphID: 1166, MonthAgo: 1, IsDown: false},
-	}
-	f_name2, err := GenDayCvs(day_lists)
+	// day_lists := []cacti.GetPercentMonthlyRequest{
+	// 	{GraphID: 1166, MonthAgo: 1, IsDown: false},
+	// }
+	f_name2, err := GenDayCvs(day_temp_list)
 	if err != nil {
 		global.LOG.Errorln(err)
 		return
