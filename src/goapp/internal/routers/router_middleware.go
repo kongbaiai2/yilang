@@ -1,7 +1,6 @@
 package routers
 
 import (
-	"bytes"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -12,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/kongbaiai2/yilang/goapp/internal/global"
 
@@ -221,13 +221,64 @@ func Auth() gin.HandlerFunc {
 	}
 }
 
+// sanitizeAndTruncate returns a safe, truncated string for logging.
+func sanitizeAndTruncate(raw []byte, maxRunes int) string {
+	// Step 1: Fast check if sanitization is needed
+	needSanitize := false
+	for _, b := range raw {
+		if b < 32 && b != '\t' && b != '\n' && b != '\r' {
+			needSanitize = true
+			break
+		}
+	}
+
+	var clean []byte
+	if needSanitize {
+		clean = make([]byte, 0, len(raw))
+		for _, b := range raw {
+			if b >= 32 || b == '\t' || b == '\n' || b == '\r' {
+				clean = append(clean, b)
+			}
+		}
+	} else {
+		clean = raw // zero-copy!
+	}
+
+	// Step 2: Truncate safely (by rune, not byte)
+	return safeTruncate(string(clean), maxRunes)
+}
+
+// safeTruncate truncates a string to maxRunes runes (not bytes),
+// and appends "..." if truncated.
+func safeTruncate(s string, maxRunes int) string {
+	if len(s) <= maxRunes {
+		return s
+	}
+
+	// Count runes up to maxRunes
+	var count int
+	var end int
+	for i, r := range s {
+		if count >= maxRunes {
+			end = i
+			break
+		}
+		count++
+		end = i + utf8.RuneLen(r)
+	}
+
+	// Ensure we don't cut in the middle of a rune
+	truncated := s[:end]
+	return truncated + "...(truncated)"
+}
+
 func getRequestBody(c *gin.Context) string {
 	data, err := c.GetRawData()
 	if err != nil {
 		global.LOG.Errorf("read body err:%s", err.Error())
 	}
 
-	c.Request.Body = ioutil.NopCloser(bytes.NewBuffer(data))
+	c.Request.Body = ioutil.NopCloser(strings.NewReader(sanitizeAndTruncate(data, 512))) //ioutil.NopCloser(bytes.NewBuffer(data))
 
 	return string(data)
 }
