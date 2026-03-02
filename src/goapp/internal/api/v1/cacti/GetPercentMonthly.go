@@ -11,9 +11,10 @@ import (
 )
 
 type GetPercentMonthlyRequest struct {
-	GraphID  int  `json:"GraphID" validate:"required"`
-	MonthAgo int  `json:"MonthAgo" default:"1"`
-	IsDown   bool `json:"IsDown"`
+	GraphID  int    `json:"GraphID" validate:"required"`
+	MonthAgo int    `json:"MonthAgo" default:"1"`
+	IsDown   bool   `json:"IsDown"`
+	Describe string `json:"Describe"`
 }
 
 // Validate check request validation.

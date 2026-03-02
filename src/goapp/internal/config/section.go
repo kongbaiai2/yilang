@@ -76,7 +76,8 @@ type Header struct {
 }
 
 type GetPercentMonthlyRequest struct {
-	GraphID  int  `yaml:"GraphID"`
-	MonthAgo int  `yaml:"MonthAgo"`
-	IsDown   bool `yaml:"IsDown"`
+	GraphID  int    `yaml:"GraphID"`
+	MonthAgo int    `yaml:"MonthAgo"`
+	IsDown   bool   `yaml:"IsDown"`
+	Describe string `yaml:"Describe"`
 }

@@ -45,13 +45,8 @@ func GenMonthCvs(paras []cacti.GetPercentMonthlyRequest) (string, error) {
 			return "", err
 		}
 		// datavalue = append(datavalue, month_tmp)
-		if para.GraphID == 889 {
-			str += fmt.Sprintf("Tx month %s: %.2f\n<p>", month_tmp[0].Data, month_tmp[0].Value)
-		} else if para.GraphID == 1166 {
-			str += fmt.Sprintf("youyuan month %s: %.2f\n<p>", month_tmp[0].Data, month_tmp[0].Value)
-		} else if para.GraphID == 1091 {
-			str += fmt.Sprintf("xiantong month %s: %.2f\n<p>", month_tmp[0].Data, month_tmp[0].Value)
-		}
+		str += fmt.Sprintf("name %s month %s: %.2f\n<p>", para.Describe, month_tmp[0].Data, month_tmp[0].Value)
+
 	}
 
 	// total_month := MergeByDate(datavalue)
@@ -70,6 +65,7 @@ func GenMonthCvs(paras []cacti.GetPercentMonthlyRequest) (string, error) {
 func GenDayCvs(paras []cacti.GetPercentMonthlyRequest) (string, error) {
 	datavalue := [][]cacti.DataValueResult{}
 
+	headers := []string{"Date"}
 	for _, para := range paras {
 		day_tmp, err := GetPercentEverDay(para.GraphID, para.MonthAgo, para.IsDown)
 		if err != nil {
@@ -77,11 +73,12 @@ func GenDayCvs(paras []cacti.GetPercentMonthlyRequest) (string, error) {
 			return "", err
 		}
 		datavalue = append(datavalue, day_tmp)
+		headers = append(headers, para.Describe)
 	}
 
 	total_day := MergeByDate(datavalue)
 
-	csv := MergedRows(total_day).ToCSVString()
+	csv := MergedRows(total_day).ToCSVString(headers)
 	uuid := utils.GenUUID32()[:8]
 	filename := fmt.Sprintf("%s/day_%s.csv", Cvs_dir, uuid)
 	if err := os.WriteFile(filename, []byte(csv), 0644); err != nil {
@@ -103,6 +100,7 @@ func GenDataAndGraph() {
 			GraphID:  v.GraphID,
 			MonthAgo: v.MonthAgo,
 			IsDown:   v.IsDown,
+			Describe: v.Describe,
 		}
 		month_temp_list = append(month_temp_list, temp)
 	}
@@ -112,6 +110,7 @@ func GenDataAndGraph() {
 			GraphID:  v.GraphID,
 			MonthAgo: v.MonthAgo,
 			IsDown:   v.IsDown,
+			Describe: v.Describe,
 		}
 		day_temp_list = append(day_temp_list, temp)
 	}
@@ -151,6 +150,7 @@ func GenDataAndGraph() {
 	opt := cacti.DeleteDirRequest{
 		Dir: Cvs_dir,
 	}
+	// return
 	cacti.DeleteDirWork(&opt)
 	opt.Dir = global.CONFIG.CactiCfg.ImgPath
 	cacti.DeleteDirWork(&opt)
@@ -259,15 +259,17 @@ type MergedRow struct {
 type MergedRows []MergedRow
 
 // ✅ 现在可以为 MergedRows 定义方法！
-func (mrs MergedRows) ToCSVString() string {
+func (mrs MergedRows) ToCSVString(headers []string) string {
 	if len(mrs) == 0 {
 		return "Date\n"
 	}
 
 	// 表头
-	headers := []string{"Date"}
-	for i := 1; i <= len(mrs[0].Values); i++ {
-		headers = append(headers, fmt.Sprintf("Value%d", i))
+	if len(headers) <= 0 {
+		headers := []string{"Date"}
+		for i := 1; i <= len(mrs[0].Values); i++ {
+			headers = append(headers, fmt.Sprintf("Value%d", i))
+		}
 	}
 
 	var lines []string
