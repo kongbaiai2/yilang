@@ -79,13 +79,13 @@
 
   <div class="control-group">
     <label>GraphID:</label>
-    <input type="number" id="graphID" value="889" min="1" />
+    <input type="number" id="graphID" value="1166" min="1" />
     <br>
     <label>Percent (%):</label>
     <input type="text" id="percent" value="95" />
     <br>
     <label>MonthAgo:</label>
-    <input type="number" id="monthAgo" value="1" min="1" />
+    <input type="number" id="monthAgo" value="0" min="0" />
     <br>
     <label>是否生成图片?</label>
     <input type="checkbox" id="isDown" />
@@ -168,9 +168,9 @@
 
     function callAPI(endpoint) {
       showLoading();
-      const graphID = parseInt(document.getElementById('graphID').value) || 123;
+      const graphID = parseInt(document.getElementById('graphID').value) || 1166;
       const percent = document.getElementById('percent').value || '95';
-      const monthAgo = parseInt(document.getElementById('monthAgo').value) || 1;
+      const monthAgo = parseInt(document.getElementById('monthAgo').value) || 0;
       const isDown = document.getElementById('isDown').checked;
 
       const url = new URL(`/api/cacti/${endpoint}`, window.location.origin);
@@ -211,7 +211,7 @@
 
     function DescribeImage() {
       showLoading();
-      const graphID = parseInt(document.getElementById('graphID').value) || 123;
+      const graphID = parseInt(document.getElementById('graphID').value) || 1166;
 
       const url = new URL('/api/cacti/DescribeImage', window.location.origin);
       url.searchParams.set('GraphID', graphID);

@@ -5,7 +5,7 @@ system:
   debug: true
   auth: true
   httpPort: ":8002"
-  pprofPort: ":8990"
+  pprofPort: ":8992"
   ginMode: "release"  #debug/release
   ipAddress: "120.232.56.97"
 

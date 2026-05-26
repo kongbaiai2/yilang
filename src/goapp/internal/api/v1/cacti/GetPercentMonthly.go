@@ -12,9 +12,9 @@ import (
 
 type GetPercentMonthlyRequest struct {
 	GraphID  int    `json:"GraphID" validate:"required"`
-	Procent  string `json:"Percent" default:"95"`
 	MonthAgo int    `json:"MonthAgo" default:"1"`
 	IsDown   bool   `json:"IsDown"`
+	Describe string `json:"Describe"`
 }
 
 // Validate check request validation.
@@ -59,6 +59,7 @@ func GetPercentMonthly(c *gin.Context) {
 			return errcode.ErrorParameters, nil
 		}
 
+		global.LOG.Infof("%+v", opt)
 		e, ret = GetPercentMonthlyWork(&opt)
 		// ret = listImages(c, ret_tmp)
 		return

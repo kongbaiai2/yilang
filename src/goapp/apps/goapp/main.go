@@ -12,6 +12,7 @@ import (
 	"github.com/kongbaiai2/yilang/goapp/internal/callothers/cacti_proxy"
 	"github.com/kongbaiai2/yilang/goapp/internal/global"
 	"github.com/kongbaiai2/yilang/goapp/internal/routers"
+	"github.com/kongbaiai2/yilang/goapp/internal/task"
 	"github.com/kongbaiai2/yilang/goapp/pkg/middleware"
 
 	"github.com/gin-gonic/gin"
@@ -77,17 +78,25 @@ func initDefaultParameters() {
 	// global.REDIS = cache.Redis()
 	// global.SqlDB, _ = global.DB.DB()
 	// global.Cacti = cacti_proxy.NewCactiClient(global.CONFIG.CactiCfg.BaseURL, global.CONFIG.CactiCfg.Username, global.CONFIG.CactiCfg.Password)
-	global.Cacti = &cacti_proxy.CactiOptions{}
-	global.Cacti.SetConfig(cacti_proxy.CactiConfig{
+	cacti_proxy.Cacti = &cacti_proxy.CactiOptions{}
+	cacti_proxy.Cacti.SetConfig(cacti_proxy.CactiConfig{
 		URL:      global.CONFIG.CactiCfg.BaseURL,
 		Username: global.CONFIG.CactiCfg.Username,
 		Password: global.CONFIG.CactiCfg.Password,
-	})
+	}) //.LoginCacti()
 
 }
 
 func execTask() {
-	// cacti_proxy.FetchOption()
+	// 0 0 0 3 1 *
+	// task.SendMail()
+	if global.CONFIG.Mail.ImmediatelySend {
+		task.GenDataAndGraph()
+	}
+
+	task.AddFunc(global.CONFIG.Crantab, task.GenDataAndGraph)
+	task.Start()
+
 }
 
 func main() {
@@ -112,6 +121,7 @@ func main() {
 	// 初始化默认参数
 	initDefaultParameters()
 
+	global.LOG.Infof("go app is restarting...")
 	execTask()
 
 	gin.SetMode(global.CONFIG.System.GinMode)
@@ -119,12 +129,12 @@ func main() {
 	s := &http.Server{
 		Addr:           global.CONFIG.System.HttpPort,
 		Handler:        router,
-		ReadTimeout:    20 * time.Second,
-		WriteTimeout:   20 * time.Second,
+		ReadTimeout:    30 * time.Second,
+		WriteTimeout:   30 * time.Second,
 		MaxHeaderBytes: 1 << 20,
 	}
 
-	global.LOG.Infof("go tools is restarting...")
+	global.LOG.Infof("app:%s, goversion:%s, git:%s, time:%s, tag:%s", "goapp", runtime.Version(), buildGitRevision, buildTimestamp, tagGitVersion)
 
 	if err := s.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		fmt.Printf("s.ListenAndServe err: %v", err)

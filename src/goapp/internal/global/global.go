@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"runtime"
 
-	"github.com/kongbaiai2/yilang/goapp/internal/callothers/cacti_proxy"
 	"github.com/kongbaiai2/yilang/goapp/internal/config"
 
 	"github.com/gomodule/redigo/redis"
@@ -25,7 +24,6 @@ var (
 
 	// ProcessExit 全局变量 进程是否退出
 	ProcessExit = false
-	Cacti       *cacti_proxy.CactiOptions
 )
 
 func PrintStack() {

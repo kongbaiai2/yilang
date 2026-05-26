@@ -11,10 +11,9 @@ import (
 )
 
 type GetPercentEveryDayRequest struct {
-	GraphID  int    `json:"GraphID" validate:"required"`
-	Procent  string `json:"Percent" default:"95"`
-	MonthAgo int    `json:"MonthAgo" default:"1"`
-	IsDown   bool   `json:"IsDown"`
+	GraphID  int  `json:"GraphID" validate:"required"`
+	MonthAgo int  `json:"MonthAgo" default:"0"`
+	IsDown   bool `json:"IsDown"`
 }
 
 // Validate check request validation.
@@ -36,9 +35,10 @@ func GetPercentEveryDayWork(opt *GetPercentEveryDayRequest) (e *errcode.Err, ret
 	}
 	e = errcode.StatusSuccess
 	ret = &GetPercentEveryDayResponse{Values: data}
-	for _, v := range data {
-		global.LOG.Infof("success, day p95: \n%v: %.2f ", v.Data, v.Value)
-	}
+	// for _, v := range data {
+	// 	global.LOG.Infof("success, day p95: \n%v: %.2f ", v.Data, v.Value)
+	// }
+	// global.LOG.Infof("success, day p95: %v ", data)
 
 	return
 }
@@ -54,6 +54,7 @@ func GetPercentEveryDay(c *gin.Context) {
 			return errcode.ErrorParameters, nil
 		}
 
+		global.LOG.Infof("%+v", opt)
 		e, ret = GetPercentEveryDayWork(&opt)
 		// ret = listImages(c, ret_tmp)
 		return

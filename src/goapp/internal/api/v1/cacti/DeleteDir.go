@@ -1,6 +1,7 @@
 package cacti
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 
@@ -11,12 +12,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// type DeleteDirRequest struct {
-// 	GraphID  int    `json:"GraphID" validate:"required"`
-// 	Procent  string `json:"Percent" default:"95"`
-// 	MonthAgo int    `json:"MonthAgo" default:"1"`
-// 	IsDown   bool   `json:"IsDown"`
-// }
+type DeleteDirRequest struct {
+	Dir string `json:"Dir"`
+}
 
 // // Validate check request validation.
 // func (obj *DeleteDirRequest) Validate() *errcode.Err {
@@ -24,47 +22,37 @@ import (
 // 	return nil
 // }
 
-type DeleteDirResponse struct {
-	GetPercentEveryDayResponse
+func DeleteDirWork(opt *DeleteDirRequest) (e *errcode.Err, ret interface{}) {
+	dir := opt.Dir
+	err := os.RemoveAll(filepath.Clean(dir))
+	if err != nil {
+		global.LOG.Errorf("[ERROR] DeleteDir remove directory failed, err:%v", err)
+		return &errcode.Err{Msg: err.Error()}, nil
+	}
+	err = os.MkdirAll(dir, os.ModePerm)
+	if err != nil {
+		global.LOG.Errorf("[ERROR] DeleteDir recreate directory failed, err:%v", err)
+		return &errcode.Err{Msg: err.Error()}, nil
+	}
+
+	e = errcode.StatusSuccess
+	return
 }
-
-// func DeleteDirWork(opt *DeleteDirRequest) (e *errcode.Err, ret *GetPercentEveryDayResponse) {
-
-// 	monthStr, data, err := ProcessMonthly(opt.GraphID, opt.MonthAgo, opt.IsDown)
-// 	if err != nil {
-// 		return &errcode.Err{Msg: err.Error()}, nil
-// 	}
-// 	e = errcode.StatusSuccess
-// 	ret = &GetPercentEveryDayResponse{
-// 		values: []DataValueResult{
-// 			{
-// 				Data:  monthStr,
-// 				Value: data / 1000000,
-// 			},
-// 		},
-// 	}
-
-// 	global.LOG.Errorf("success, month p95 \n%v: %.2f 95th ", monthStr, data/1000000)
-
-// 	return
-// }
 
 func DeleteDir(c *gin.Context) {
 	ginplus.ResponseWrapper(c, func(c *gin.Context) (e *errcode.Err, ret interface{}) {
-
-		dir := global.CONFIG.CactiCfg.ImgPath
-		err := os.RemoveAll(filepath.Clean(dir))
-		if err != nil {
-			global.LOG.Errorf("[ERROR] DeleteDir remove directory failed, err:%v", err)
-			return &errcode.Err{Msg: err.Error()}, nil
-		}
-		err = os.MkdirAll(dir, os.ModePerm)
-		if err != nil {
-			global.LOG.Errorf("[ERROR] DeleteDir recreate directory failed, err:%v", err)
-			return &errcode.Err{Msg: err.Error()}, nil
+		opt := DeleteDirRequest{}
+		if err := ginplus.BindParams(c, &opt); err != nil {
+			global.LOG.Errorf("[ERROR] GetPercentEveryDay check parameters failed, err:%v", err)
+			if errors.Is(err, errcode.ErrorCidrFormat) {
+				return errcode.ErrorCidrFormat, nil
+			}
+			return errcode.ErrorParameters, nil
 		}
 
-		e = errcode.StatusSuccess
-		return
+		if opt.Dir == "" {
+			opt.Dir = global.CONFIG.CactiCfg.ImgPath
+		}
+		return DeleteDirWork(&opt)
 	})
 }

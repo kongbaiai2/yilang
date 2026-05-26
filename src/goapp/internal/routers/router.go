@@ -2,9 +2,11 @@ package routers
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/kongbaiai2/yilang/goapp/internal/api/v1/cacti"
 	"github.com/kongbaiai2/yilang/goapp/internal/global"
+	"github.com/kongbaiai2/yilang/goapp/pkg/ginplus"
 
 	"github.com/gin-gonic/gin"
 )
@@ -28,6 +30,16 @@ func NewRouter() *gin.Engine {
 	})
 
 	g.Use(GinLogger(), GinRecovery(true))
+	g.Use(
+		ginplus.RateLimit(ginplus.RateLimitConfig{
+			Requests: 5,
+			Window:   1 * time.Minute,
+		}),
+		ginplus.Cache(ginplus.CacheConfig{
+			MaxAge:      300,
+			IgnorePaths: []string{"/admin", "/api/cacti/DescribeImage", "/api/cacti/DeleteDir"},
+		}),
+	)
 
 	// if global.CONFIG.System.Auth {
 	// 	g.Use(Auth())
@@ -37,14 +49,6 @@ func NewRouter() *gin.Engine {
 	/***********     OPS API, provided to the Luban platform       ***********/
 	/*************************************************************************/
 	apiGroup := g.Group("/api")
-
-	// // cidr depended
-	// resApi := apiGroup.Group("/cidr")
-	// {
-	// 	resApi.GET("/ListCidrs", cidr.ListCidrs)
-	// 	// resApi.GET("/CreateCidr", cidr.CreateCidr)
-	// 	resApi.GET("/DeleteCidr", cidr.DeleteCidr)
-	// }
 
 	resApi := apiGroup.Group("/cacti")
 	{
