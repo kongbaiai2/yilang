@@ -333,9 +333,9 @@ func min(a, b int) int {
 
 // 主函数
 
-// cactiURL := "https://zabbix.yipeng888.com:444/cacti"
+// cactiURL := "https://.com:444/cacti"
 // username := "admin"
-// password := "BeiJingYP!123.com"
+// password := "pwd"
 // localGraphID := 985
 
 // ProcessMonthly(cactiURL, username, password, localGraphID)
