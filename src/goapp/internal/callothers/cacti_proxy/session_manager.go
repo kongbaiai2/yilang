@@ -42,9 +42,15 @@ func NewSessionManager(baseURL, username, password string, client *http.Client) 
 }
 
 func (sm *SessionManager) FlushLogin() {
+	sm.loginMu.Lock()
+	defer sm.loginMu.Unlock()
 	sm.isLoggedIn = false
 }
 
+func isLoginPageBody(body []byte) bool {
+	return bytes.Contains(body, []byte("login_username")) &&
+		bytes.Contains(body, []byte("login_password"))
+}
 // IsAlive 检查当前 session 是否仍有效（只读，不触发登录）
 // 返回 true 表示已登录且可访问 graph_view.php；false 表示需重登录
 func (sm *SessionManager) IsAlive() bool {
@@ -64,11 +70,8 @@ func (sm *SessionManager) IsAlive() bool {
 	defer resp.Body.Close()
 
 	body, _ := io.ReadAll(resp.Body)
-	// 检测是否被重定向到登录页或返回登录 HTML
-	isLoginPage := bytes.Contains(body, []byte("登录到Cacti")) ||
-		bytes.Contains(body, []byte("<title>登录")) ||
-		(resp.StatusCode == 302 && strings.Contains(resp.Header.Get("Location"), "login.php"))
-
+	isLoginPage := isLoginPageBody(body) ||
+		(resp.StatusCode == 302 && strings.Contains(resp.Header.Get("Location"), "index.php"))
 	if isLoginPage {
 		global.LOG.Debug("Session expired or invalid (detected login page)")
 		return false
@@ -107,11 +110,20 @@ func (sm *SessionManager) ForceLogin() error {
 
 // doLoginOnce 执行单次登录（无重试逻辑）
 func (sm *SessionManager) doLoginOnce() error {
+	if sm.isLoginValid() {
+		sm.isLoggedIn = true
+		return nil
+	}
+
 	loginURL := sm.baseURL + "/index.php"
 
 	// 1️⃣ 提取 CSRF token
 	token, err := sm.extractCSRFToken(loginURL)
 	if err != nil {
+		if sm.isLoginValid() {
+			sm.isLoggedIn = true
+			return nil
+		}
 		return fmt.Errorf("extract CSRF token: %w", err)
 	}
 
@@ -138,6 +150,13 @@ func (sm *SessionManager) doLoginOnce() error {
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusFound {
 		return fmt.Errorf("login response status %d", resp.StatusCode)
+	}
+	postBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("read login response: %w", err)
+	}
+	if isLoginPageBody(postBody) {
+		return fmt.Errorf("login rejected: response still contains the login form")
 	}
 
 	// 3️⃣ 验证登录结果：访问 graph_view.php
@@ -181,7 +200,8 @@ func (sm *SessionManager) isLoginValid() bool {
 
 	body, _ := io.ReadAll(resp.Body)
 	// global.LOG.Debug(string(body))
-	return !(bytes.Contains(body, []byte("登录到Cacti")) || bytes.Contains(body, []byte("<title>登录")))
+	// return !(bytes.Contains(body, []byte("登录到Cacti")) || bytes.Contains(body, []byte("<title>登录")))
+	return !isLoginPageBody(body)
 }
 
 // EnsureLogin 线程安全地确保已登录：若未登录则调用 ForceLogin()

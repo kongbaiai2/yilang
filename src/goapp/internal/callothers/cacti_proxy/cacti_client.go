@@ -165,7 +165,9 @@ func loginCacti(client *http.Client, loginURL, username, password, csrfToken str
 func (g *Graph) FetchGraphData(client *http.Client) ([]byte, error) {
 	return fetchGraphData(client, g.dataUrl)
 }
-
+func isXportCSV(body []byte) bool {
+	return bytes.Contains(body, []byte(`"日期"`))
+}
 // 从 graph_xport.php 获取并解析 Inbound 数据（健壮版）
 func fetchGraphData(client *http.Client, dataUrl string) ([]byte, error) {
 	exportResp, err := client.Get(dataUrl)
@@ -278,6 +280,12 @@ func calculateP95(values []float64) float64 {
 // 下载并保存图表图片
 func downloadGraphImage(client *http.Client, graphImageURL, filename string) error {
 	// fmt.Printf("📥 Downloading graph image from: %s\n", graphImageURL)
+	if graphImageURL == "" {
+		return fmt.Errorf("⚠️ Graph image URL is empty")
+	}
+	if filename == "" {
+		return fmt.Errorf("⚠️ Graph image filename is empty")
+	}
 
 	resp, err := client.Get(graphImageURL)
 	if err != nil {
@@ -289,14 +297,22 @@ func downloadGraphImage(client *http.Client, graphImageURL, filename string) err
 		return fmt.Errorf("⚠️ Graph image request failed with status: %s", resp.Status)
 	}
 
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("⚠️ Failed to read graph image body: %v", err)
+	}
+	pngMagic := []byte{0x89, 'P', 'N', 'G', 0x0D, 0x0A, 0x1A, 0x0A}
+	if len(data) < len(pngMagic) || !bytes.Equal(data[:len(pngMagic)], pngMagic) {
+		return fmt.Errorf("⚠️ Graph image response is not a PNG (session invalid?)")
+	}
+
 	outFile, err := os.Create("img/" + filename)
 	if err != nil {
 		return fmt.Errorf("⚠️ Failed to create file %s: %v", filename, err)
 	}
 	defer outFile.Close()
 
-	_, err = io.Copy(outFile, resp.Body)
-	if err != nil {
+	if _, err = outFile.Write(data); err != nil {
 		return fmt.Errorf("⚠️ Failed to write image to file %s: %v", filename, err)
 	}
 
@@ -368,16 +384,17 @@ func (c *CactiOptions) Do(g *Graph) (float64, error) {
 
 	// 获取并处理数据,获取95值
 	allValues, err := c.graph.FetchGraphData(c.client)
-	if err != nil {
 		// ⚠️ 可选：session 可能刚过期？再检一次并重试
-		if !c.sessionMgr.IsAlive() {
+		if err != nil || !isXportCSV(allValues) {
 			c.sessionMgr.Invalidate()
 			if retryErr := c.sessionMgr.EnsureLogin(); retryErr == nil {
 				allValues, err = g.FetchGraphData(c.client)
 			}
-		}
 		if err != nil {
 			return 0, fmt.Errorf("fetch data failed: %w", err)
+		}
+		if !isXportCSV(allValues) {
+			return 0, fmt.Errorf("graph_xport response is not CSV data (session invalid?)")
 		}
 	}
 	// // inbound=2 oubound=3
@@ -390,11 +407,10 @@ func (c *CactiOptions) Do(g *Graph) (float64, error) {
 
 	// p95 := calculateP95(inboundValues)
 
-	remote_p95, _ := extractCactiP95FromExport(string(allValues))
-
-	// if (p95-remote_p95) > 1000 || (remote_p95-p95) > 1000 {
-	// 	global.LOG.Errorf("Remote report 95th place - calculation of 95th percentile data with significant difference.remote_p95:%f, p95:%f ", remote_p95, p95)
-	// }
+	remote_p95, ok := extractCactiP95FromExport(string(allValues))
+	if !ok {
+		return 0, fmt.Errorf("no '百分之百'/'95th Percentile' row found in xport data")
+	}
 
 	return remote_p95, nil
 }
